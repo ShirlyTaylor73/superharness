@@ -1,0 +1,56 @@
+version: 1
+entryState: brainstorming
+terminalStates:
+  - done
+states:
+  brainstorming:
+    type: interactive
+    skill: brainstorming
+    next:
+      - planning
+      - systematic_debugging
+  planning:
+    type: interactive
+    skill: writing-plans
+    next:
+      - execution_choice
+      - systematic_debugging
+  execution_choice:
+    type: router
+    next:
+      - serial_execution
+      - parallel_execution
+      - systematic_debugging
+  serial_execution:
+    type: execution
+    skill: serial-executing-plans
+    next:
+      - verification
+      - systematic_debugging
+  parallel_execution:
+    type: execution
+    skill: parallel-executing-plans
+    next:
+      - verification
+      - systematic_debugging
+  verification:
+    type: gate
+    skill: verification-before-completion
+    next:
+      - finishing
+      - systematic_debugging
+  finishing:
+    type: gate
+    skill: finishing-a-development-branch
+    next:
+      - done
+      - systematic_debugging
+  systematic_debugging:
+    type: preemptive
+    skill: systematic-debugging
+    next:
+      - previous_state
+      - serial_execution
+      - planning
+  done:
+    type: terminal

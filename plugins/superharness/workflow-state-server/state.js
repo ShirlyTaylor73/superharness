@@ -1,0 +1,336 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const IS_BUN = typeof process !== 'undefined' && !!process.versions?.bun;
+const Database = IS_BUN
+  ? (await import('bun:sqlite')).Database
+  : (await import('better-sqlite3')).default;
+
+const VALID_SOURCES = new Set(['hook', 'agent-tool', 'user-reset']);
+
+function now() {
+  return Date.now();
+}
+
+function requireReason(reason) {
+  if (typeof reason !== 'string' || reason.trim() === '') {
+    throw new Error('reason must be a non-empty string');
+  }
+  return reason.trim();
+}
+
+function requireWorkspaceRoot(workspaceRoot) {
+  if (typeof workspaceRoot !== 'string' || workspaceRoot.trim() === '') {
+    throw new Error('workspaceRoot must be a non-empty string');
+  }
+  return path.resolve(workspaceRoot);
+}
+
+function requireWorkflowGraph(workflowGraph) {
+  if (!workflowGraph?.states || !workflowGraph?.entryState) {
+    throw new Error('workflowGraph is required');
+  }
+  return workflowGraph;
+}
+
+function activeSkillFor(workflowGraph, stateName) {
+  return workflowGraph.states.get(stateName)?.skill ?? null;
+}
+
+function statusFor(workflowGraph, stateName) {
+  return workflowGraph.states.get(stateName)?.terminal ? 'completed' : 'active';
+}
+
+function normalizeSource(source = 'agent-tool') {
+  if (!VALID_SOURCES.has(source)) {
+    throw new Error(`invalid source: ${source}`);
+  }
+  return source;
+}
+
+function readSchema() {
+  return fs.readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema.sql'),
+    'utf8',
+  );
+}
+
+function normalizeRow(row) {
+  if (!row) return null;
+  return {
+    workspace_id: row.workspace_id,
+    state: row.state,
+    status: row.status,
+    previous_state: row.previous_state ?? null,
+    active_skill: row.active_skill ?? null,
+    task_summary: row.task_summary ?? null,
+    failure_summary: row.failure_summary ?? null,
+    updated_at: row.updated_at,
+  };
+}
+
+function getRow(store, workspaceId) {
+  return normalizeRow(
+    store.prepare('SELECT * FROM workflow_state WHERE workspace_id = ?').get(workspaceId),
+  );
+}
+
+function insertLog(store, {
+  workspaceId,
+  fromState,
+  toState,
+  previousState,
+  reason,
+  source,
+  createdAt = now(),
+}) {
+  store.prepare(`
+    INSERT INTO workflow_transition_log (
+      workspace_id, from_state, to_state, previous_state, reason, source, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(workspaceId, fromState ?? null, toState, previousState ?? null, reason, source, createdAt);
+}
+
+function upsertState(store, {
+  workspaceId,
+  workflowGraph,
+  state,
+  previousState = null,
+  taskSummary = null,
+  failureSummary = null,
+  updatedAt = now(),
+}) {
+  store.prepare(`
+    INSERT INTO workflow_state (
+      workspace_id, state, status, previous_state, active_skill,
+      task_summary, failure_summary, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(workspace_id) DO UPDATE SET
+      state = excluded.state,
+      status = excluded.status,
+      previous_state = excluded.previous_state,
+      active_skill = excluded.active_skill,
+      task_summary = excluded.task_summary,
+      failure_summary = excluded.failure_summary,
+      updated_at = excluded.updated_at
+  `).run(
+    workspaceId,
+    state,
+    statusFor(workflowGraph, state),
+    previousState,
+    activeSkillFor(workflowGraph, state),
+    taskSummary,
+    failureSummary,
+    updatedAt,
+  );
+  return getRow(store, workspaceId);
+}
+
+function assertTransitionAllowed(workflowGraph, fromState, toState) {
+  const fromNode = workflowGraph.states.get(fromState);
+  if (!fromNode) {
+    throw new Error(`unknown from_state: ${fromState}`);
+  }
+  if (!fromNode.next.includes(toState)) {
+    throw new Error(`transition ${fromState} -> ${toState} is not allowed`);
+  }
+}
+
+export function resolveWorkflowDbPath({ workspaceRoot } = {}) {
+  if (process.env.SUPERHARNESS_WORKFLOW_STATE_DB) {
+    return process.env.SUPERHARNESS_WORKFLOW_STATE_DB;
+  }
+  return path.join(requireWorkspaceRoot(workspaceRoot ?? process.cwd()), '.superharness', 'workflow-state.db');
+}
+
+export function openWorkflowStateStore({ dbPath, mode } = {}) {
+  const resolvedDbPath = mode === 'memory' ? ':memory:' : path.resolve(dbPath ?? resolveWorkflowDbPath());
+  if (resolvedDbPath !== ':memory:') {
+    fs.mkdirSync(path.dirname(resolvedDbPath), { recursive: true });
+  }
+
+  const db = new Database(resolvedDbPath);
+  const store = {
+    db,
+    path: resolvedDbPath,
+    exec(sql) {
+      return db.exec(sql);
+    },
+    prepare(sql) {
+      return typeof db.prepare === 'function' ? db.prepare(sql) : db.query(sql);
+    },
+    close() {
+      return db.close();
+    },
+  };
+
+  if (resolvedDbPath !== ':memory:') {
+    store.exec('PRAGMA journal_mode = WAL');
+  }
+  store.exec('PRAGMA foreign_keys = ON');
+  store.exec(readSchema());
+
+  return store;
+}
+
+export function initializeWorkflowState(store, {
+  workspaceRoot,
+  workflowGraph,
+  reason = 'initialize workflow state',
+} = {}) {
+  const graph = requireWorkflowGraph(workflowGraph);
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const existing = getRow(store, workspaceId);
+  if (existing) return existing;
+
+  const trimmedReason = requireReason(reason);
+  const state = upsertState(store, {
+    workspaceId,
+    workflowGraph: graph,
+    state: graph.entryState,
+  });
+  insertLog(store, {
+    workspaceId,
+    fromState: null,
+    toState: graph.entryState,
+    previousState: null,
+    reason: trimmedReason,
+    source: 'agent-tool',
+  });
+  return state;
+}
+
+export function getWorkflowState(store, { workspaceRoot, workflowGraph } = {}) {
+  return initializeWorkflowState(store, {
+    workspaceRoot,
+    workflowGraph,
+    reason: 'initialize workflow state',
+  });
+}
+
+export function classifyRequest(store, {
+  workspaceRoot,
+  workflowGraph,
+  task_summary = null,
+  failure_summary = null,
+  reason,
+} = {}) {
+  const graph = requireWorkflowGraph(workflowGraph);
+  const trimmedReason = requireReason(reason);
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const current = getWorkflowState(store, { workspaceRoot, workflowGraph: graph });
+
+  const updated = upsertState(store, {
+    workspaceId,
+    workflowGraph: graph,
+    state: current.state,
+    previousState: current.previous_state,
+    taskSummary: task_summary,
+    failureSummary: failure_summary,
+  });
+  insertLog(store, {
+    workspaceId,
+    fromState: current.state,
+    toState: current.state,
+    previousState: current.previous_state,
+    reason: trimmedReason,
+    source: 'agent-tool',
+  });
+  return updated;
+}
+
+export function transitionWorkflowState(store, {
+  workspaceRoot,
+  workflowGraph,
+  from_state,
+  to_state,
+  previous_state = null,
+  reason,
+  source = 'agent-tool',
+} = {}) {
+  const graph = requireWorkflowGraph(workflowGraph);
+  const trimmedReason = requireReason(reason);
+  const normalizedSource = normalizeSource(source);
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const current = getWorkflowState(store, { workspaceRoot, workflowGraph: graph });
+
+  if (from_state !== current.state) {
+    throw new Error(`from_state ${from_state} does not match current state ${current.state}`);
+  }
+
+  let target = to_state;
+  if (target === 'previous_state') {
+    if (current.state !== 'systematic_debugging') {
+      throw new Error('previous_state transition is only valid from systematic_debugging');
+    }
+    assertTransitionAllowed(graph, current.state, 'previous_state');
+    if (!current.previous_state) {
+      throw new Error('previous_state transition has no recorded previous_state');
+    }
+    target = current.previous_state;
+  } else {
+    assertTransitionAllowed(graph, current.state, target);
+  }
+
+  if (!graph.states.has(target)) {
+    throw new Error(`unknown to_state: ${target}`);
+  }
+
+  const nextPreviousState = target === 'systematic_debugging'
+    ? (previous_state || current.state)
+    : null;
+
+  const updated = upsertState(store, {
+    workspaceId,
+    workflowGraph: graph,
+    state: target,
+    previousState: nextPreviousState,
+    taskSummary: current.task_summary,
+    failureSummary: current.failure_summary,
+  });
+  insertLog(store, {
+    workspaceId,
+    fromState: current.state,
+    toState: target,
+    previousState: nextPreviousState,
+    reason: trimmedReason,
+    source: normalizedSource,
+  });
+  return updated;
+}
+
+export function listWorkflowHistory(store, { workspaceRoot } = {}) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  return store.prepare(`
+    SELECT id, workspace_id, from_state, to_state, previous_state, reason, source, created_at
+    FROM workflow_transition_log
+    WHERE workspace_id = ?
+    ORDER BY id ASC
+  `).all(workspaceId);
+}
+
+export function resetWorkflowState(store, {
+  workspaceRoot,
+  workflowGraph,
+  reason,
+} = {}) {
+  const graph = requireWorkflowGraph(workflowGraph);
+  const trimmedReason = requireReason(reason);
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const current = getWorkflowState(store, { workspaceRoot, workflowGraph: graph });
+  const reset = upsertState(store, {
+    workspaceId,
+    workflowGraph: graph,
+    state: graph.entryState,
+  });
+  insertLog(store, {
+    workspaceId,
+    fromState: current.state,
+    toState: graph.entryState,
+    previousState: null,
+    reason: trimmedReason,
+    source: 'user-reset',
+  });
+  return reset;
+}

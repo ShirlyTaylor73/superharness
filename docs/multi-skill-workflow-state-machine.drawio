@@ -1,0 +1,252 @@
+<mxGraphModel dx="2200" dy="1450" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1450" math="0" shadow="0" adaptiveColors="auto">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="title" value="superharness 二期优化后 Skill 调用与状态转换图" style="text;html=1;strokeColor=none;fillColor=none;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="430" y="20" width="1320" height="44" as="geometry"/>
+    </mxCell>
+    <mxCell id="subtitle" value="核心变化：先由 request-analysis 分流；一个 Standard Plan 等于一个 development_cycle；Epic Scope 只拆 cycle backlog，每个 cycle 再复用标准开发周期。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontSize=14;align=center;" vertex="1" parent="1">
+      <mxGeometry x="270" y="78" width="1660" height="48" as="geometry"/>
+    </mxCell>
+    <mxCell id="entry_group" value="入口分析与路由落盘" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#60a5fa;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="160" width="340" height="350" as="geometry"/>
+    </mxCell>
+    <mxCell id="start" value="用户请求" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="115" y="215" width="210" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="ra" value="request-analysis&#xa;需求分析 / 难度分级&#xa;route + difficulty + cycle_id&#xa;写入状态审计日志" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="85" y="310" width="270" height="105" as="geometry"/>
+    </mxCell>
+    <mxCell id="routefacts" value="输出 discipline&#xa;needs_code_change&#xa;next_state&#xa;reason" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="105" y="435" width="230" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="fast_group" value="快速路径与领域侧路" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="555" width="710" height="330" as="geometry"/>
+    </mxCell>
+    <mxCell id="direct" value="direct-answer&#xa;只读 / 解释 / 总结&#xa;不进入开发周期" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0284c7;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="90" y="630" width="190" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="fast" value="fast-change&#xa;小范围明确修改&#xa;轻量验证" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="315" y="630" width="190" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="debug" value="systematic-debugging&#xa;bug / 测试失败 / 异常行为&#xa;抢占式侧路" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fae8ff;strokeColor=#a21caf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="540" y="630" width="190" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="meta" value="writing-skills&#xa;创建 / 修改 skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="90" y="760" width="190" height="70" as="geometry"/>
+    </mxCell>
+    <mxCell id="mcp" value="mcp-builder&#xa;构建 MCP server/tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="315" y="760" width="190" height="70" as="geometry"/>
+    </mxCell>
+    <mxCell id="runner" value="workflow-runner&#xa;YAML 多角色工作流" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="540" y="760" width="190" height="70" as="geometry"/>
+    </mxCell>
+    <mxCell id="standard_group" value="Standard Plan 开发周期：一个 active cycle 绑定一个 plan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdfa;strokeColor=#14b8a6;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="450" y="160" width="1690" height="350" as="geometry"/>
+    </mxCell>
+    <mxCell id="cycle_req" value="cycle requirements&#xa;目标 / 边界 / 依赖&#xa;验收标准 / 风险等级" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccfbf1;strokeColor=#0f766e;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="500" y="285" width="205" height="92" as="geometry"/>
+    </mxCell>
+    <mxCell id="brain" value="brainstorming&#xa;需要设计或澄清时&#xa;输出 cycle 级规格" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="755" y="230" width="210" height="90" as="geometry"/>
+    </mxCell>
+    <mxCell id="plan" value="writing-plans&#xa;生成 Standard Plan&#xa;只覆盖当前 cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccfbf1;strokeColor=#0f766e;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1015" y="230" width="220" height="90" as="geometry"/>
+    </mxCell>
+    <mxCell id="exec_choice" value="execution-choice&#xa;读取 plan metadata&#xa;选择串行或并行" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1295" y="225" width="130" height="100" as="geometry"/>
+    </mxCell>
+    <mxCell id="serial" value="serial-execution&#xa;serial-executing-plans&#xa;小 plan / 强耦合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="200" width="205" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="parallel" value="parallel-execution&#xa;parallel-executing-plans&#xa;可安全分 wave" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="315" width="205" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="verify" value="verification&#xa;verification-before-completion&#xa;验证通过才可声明完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1750" y="255" width="210" height="88" as="geometry"/>
+    </mxCell>
+    <mxCell id="finish" value="finishing&#xa;finishing-a-development-branch&#xa;合并 / PR / 保留 / 丢弃" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1730" y="385" width="240" height="82" as="geometry"/>
+    </mxCell>
+    <mxCell id="complete_cycle" value="complete_development_cycle&#xa;关闭当前 cycle&#xa;回到 request-analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbf7d0;strokeColor=#15803d;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1985" y="385" width="135" height="82" as="geometry"/>
+    </mxCell>
+    <mxCell id="epic_group" value="Epic Scope 多开发周期编排" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fb923c;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="810" y="555" width="1330" height="330" as="geometry"/>
+    </mxCell>
+    <mxCell id="epic" value="epic-scoping&#xa;只拆分，不写完整 plan&#xa;用户批准 cycle backlog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="860" y="650" width="220" height="92" as="geometry"/>
+    </mxCell>
+    <mxCell id="backlog" value="cycle backlog&#xa;按依赖排序&#xa;同一时间只有一个 active cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1135" y="650" width="225" height="92" as="geometry"/>
+    </mxCell>
+    <mxCell id="cycle1" value="Cycle 1 开发要求&#xa;目标 / 边界 / 验收&#xa;recommended_route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1420" y="610" width="210" height="82" as="geometry"/>
+    </mxCell>
+    <mxCell id="cycle2" value="Cycle 2 开发要求&#xa;只保留要求&#xa;不提前展开 plan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1420" y="720" width="210" height="82" as="geometry"/>
+    </mxCell>
+    <mxCell id="active_cycle" value="start_development_cycle&#xa;激活下一个 cycle&#xa;送回 request-analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccfbf1;strokeColor=#0f766e;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1695" y="650" width="225" height="92" as="geometry"/>
+    </mxCell>
+    <mxCell id="epic_done" value="所有 cycle 完成&#xa;Epic done" style="ellipse;whiteSpace=wrap;html=1;fillColor=#bbf7d0;strokeColor=#15803d;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1985" y="665" width="115" height="62" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_group" value="状态对应的主 skill 分类" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="930" width="2090" height="205" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_main" value="主周期状态&#xa;brainstorming / writing-plans&#xa;serial-executing-plans / parallel-executing-plans&#xa;verification-before-completion / finishing-a-development-branch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdfa;strokeColor=#14b8a6;fontSize=13;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="90" y="995" width="450" height="98" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_router" value="路由与切片状态&#xa;request-analysis&#xa;epic-scoping&#xa;execution-choice guard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#60a5fa;fontSize=13;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="590" y="995" width="360" height="98" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_side" value="领域侧路状态&#xa;systematic-debugging&#xa;writing-skills&#xa;mcp-builder&#xa;workflow-runner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=13;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="1000" y="995" width="360" height="98" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_aux" value="横切辅助 skill&#xa;test-driven-development / requesting-code-review / receiving-code-review&#xa;using-git-worktrees / verification guard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fb923c;fontSize=13;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="1410" y="995" width="430" height="98" as="geometry"/>
+    </mxCell>
+    <mxCell id="skill_zh" value="中国特色叠加辅助 skill&#xa;chinese-code-review / chinese-git-workflow&#xa;chinese-commit-conventions / chinese-documentation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#eab308;fontSize=13;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="1880" y="995" width="230" height="98" as="geometry"/>
+    </mxCell>
+    <mxCell id="legend" value="实线：合法状态转换&#xa;虚线：路由或动态注入关系&#xa;Standard Plan：当前 active cycle 的唯一详细执行计划" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="1165" width="410" height="78" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_start_ra" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2563eb;" edge="1" parent="1" source="start" target="ra">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_facts" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2563eb;" edge="1" parent="1" source="ra" target="routefacts">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_cycle" value="standard-design / standard-plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#0f766e;fontSize=12;" edge="1" parent="1" source="ra" target="cycle_req">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_req_brain" value="需要设计" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#7c3aed;fontSize=12;" edge="1" parent="1" source="cycle_req" target="brain">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_req_plan" value="需求已清晰" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#0f766e;fontSize=12;" edge="1" parent="1" source="cycle_req" target="plan">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="602" y="420"/>
+          <mxPoint x="1125" y="420"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_brain_plan" value="规格获批" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#0f766e;fontSize=12;" edge="1" parent="1" source="brain" target="plan">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_plan_ec" value="plan ready" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#0f766e;fontSize=12;" edge="1" parent="1" source="plan" target="exec_choice">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ec_serial" value="serial" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ea580c;fontSize=12;" edge="1" parent="1" source="exec_choice" target="serial">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ec_parallel" value="parallel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#2563eb;fontSize=12;" edge="1" parent="1" source="exec_choice" target="parallel">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_serial_verify" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ca8a04;" edge="1" parent="1" source="serial" target="verify">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_parallel_verify" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ca8a04;" edge="1" parent="1" source="parallel" target="verify">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_verify_finish" value="pass" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#16a34a;fontSize=12;" edge="1" parent="1" source="verify" target="finish">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_finish_complete" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#16a34a;" edge="1" parent="1" source="finish" target="complete_cycle">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_complete_ra" value="next request / next cycle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#15803d;fontSize=12;" edge="1" parent="1" source="complete_cycle" target="ra">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="2052" y="530"/>
+          <mxPoint x="220" y="530"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_ra_direct" value="direct-answer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#0284c7;fontSize=12;" edge="1" parent="1" source="ra" target="direct">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_fast" value="fast-change" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#ea580c;fontSize=12;" edge="1" parent="1" source="ra" target="fast">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_fast_verify" value="验证" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#ca8a04;fontSize=12;" edge="1" parent="1" source="fast" target="verify">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="410" y="535"/>
+          <mxPoint x="1855" y="535"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_ra_debug" value="debug-fix" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#a21caf;fontSize=12;" edge="1" parent="1" source="ra" target="debug">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_verify_debug" value="fail" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#a21caf;fontSize=12;" edge="1" parent="1" source="verify" target="debug">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1855" y="535"/>
+          <mxPoint x="635" y="535"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_debug_fast" value="小修复" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#a21caf;fontSize=12;" edge="1" parent="1" source="debug" target="fast">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_debug_plan" value="复杂修复" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#a21caf;fontSize=12;" edge="1" parent="1" source="debug" target="plan">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="635" y="555"/>
+          <mxPoint x="1125" y="555"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_ra_meta" value="meta-skill" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#0891b2;fontSize=12;" edge="1" parent="1" source="ra" target="meta">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_mcp" value="mcp-build" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#0891b2;fontSize=12;" edge="1" parent="1" source="ra" target="mcp">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_runner" value="workflow-run" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#0891b2;fontSize=12;" edge="1" parent="1" source="ra" target="runner">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ra_epic" value="epic-scope" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ea580c;fontSize=12;" edge="1" parent="1" source="ra" target="epic">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="220" y="900"/>
+          <mxPoint x="970" y="900"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_epic_backlog" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ea580c;" edge="1" parent="1" source="epic" target="backlog">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_backlog_c1" value="当前" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ca8a04;fontSize=12;" edge="1" parent="1" source="backlog" target="cycle1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_backlog_c2" value="后续" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#ca8a04;fontSize=12;" edge="1" parent="1" source="backlog" target="cycle2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_c1_active" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#0f766e;" edge="1" parent="1" source="cycle1" target="active_cycle">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_active_ra" value="复用 Standard Plan 周期" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#0f766e;fontSize=12;" edge="1" parent="1" source="active_cycle" target="ra">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1808" y="900"/>
+          <mxPoint x="220" y="900"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_active_done" value="backlog empty" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#15803d;fontSize=12;" edge="1" parent="1" source="active_cycle" target="epic_done">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_aux_execution" value="按状态动态注入" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#fb923c;fontSize=12;" edge="1" parent="1" source="parallel" target="skill_aux">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_zh_finish" value="中文团队叠加" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;strokeColor=#ca8a04;fontSize=12;" edge="1" parent="1" source="finish" target="skill_zh">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+  </root>
+</mxGraphModel>
+

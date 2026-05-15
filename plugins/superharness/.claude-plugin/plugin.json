@@ -1,0 +1,14 @@
+{
+  "name": "superharness",
+  "description": "Programmatic workflow harness for AI coding agents: 19 active skills, hooks, and MCP state management.",
+  "version": "1.1.9",
+  "author": {
+    "name": "ShirlyTaylor73",
+    "url": "https://github.com/ShirlyTaylor73"
+  },
+  "homepage": "https://github.com/ShirlyTaylor73/superharness",
+  "repository": "https://github.com/ShirlyTaylor73/superharness",
+  "license": "MIT",
+  "keywords": ["skills", "tdd", "debugging", "chinese", "中文", "best-practices", "workflows"],
+  "hooks": "./hooks/hooks.json"
+}

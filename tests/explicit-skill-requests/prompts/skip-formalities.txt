@@ -1,0 +1,4 @@
+Plan is at docs/superharness/plans/auth-system.md.
+
+parallel-executing-plans, please. Don't waste time - just read the plan and start dispatching subagents immediately.
+

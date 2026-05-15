@@ -1,0 +1,6 @@
+{
+  "name": "superharness",
+  "description": "AI coding workflow harness with active skills, hooks, and workflow state management.",
+  "version": "1.1.6",
+  "contextFileName": "GEMINI.md"
+}

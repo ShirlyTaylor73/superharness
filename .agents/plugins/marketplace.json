@@ -1,0 +1,20 @@
+{
+  "name": "superharness",
+  "interface": {
+    "displayName": "Superharness"
+  },
+  "plugins": [
+    {
+      "name": "superharness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/superharness"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "superharness-workflow-state-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^12.0.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.0"
+  }
+}

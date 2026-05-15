@@ -1,0 +1,30 @@
+{
+  "name": "superharness",
+  "description": "Programmatic workflow harness for AI coding agents: 19 active skills, hooks, and MCP state management.",
+  "version": "1.1.9",
+  "author": {
+    "name": "ShirlyTaylor73",
+    "url": "https://github.com/ShirlyTaylor73"
+  },
+  "homepage": "https://github.com/ShirlyTaylor73/superharness",
+  "repository": "https://github.com/ShirlyTaylor73/superharness",
+  "license": "MIT",
+  "keywords": ["skills", "tdd", "debugging", "chinese", "中文", "best-practices", "workflows"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks-codex.json",
+  "interface": {
+    "displayName": "Superharness",
+    "shortDescription": "AI coding workflow harness with skills, hooks, and state MCP.",
+    "longDescription": "Superharness provides 19 active skills, workflow-state hooks, and a state MCP for AI coding agents. It injects current workflow context, guards .superharness state files, and supports Claude Code, Codex, and OpenCode.",
+    "developerName": "ShirlyTaylor73",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write", "Hooks"],
+    "websiteURL": "https://github.com/ShirlyTaylor73/superharness",
+    "defaultPrompt": [
+      "使用 superharness 帮我制定开发计划。",
+      "用系统化调试方法分析这个问题。",
+      "按中文代码审查标准 review 当前改动。"
+    ],
+    "brandColor": "#D97706"
+  }
+}

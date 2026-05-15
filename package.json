@@ -1,0 +1,47 @@
+{
+  "name": "superharness",
+  "version": "1.1.9",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "description": "Programmatic workflow harness for AI coding agents with skills, hooks, MCP state management, and cross-client support.",
+  "type": "module",
+  "main": "plugins/superharness/.opencode/plugins/superharness.js",
+  "keywords": [
+    "superharness",
+    "claude-code",
+    "cursor",
+    "codex",
+    "gemini",
+    "kiro",
+    "deerflow",
+    "trae",
+    "antigravity",
+    "openclaw",
+    "windsurf",
+    "aider",
+    "opencode",
+    "qwen",
+    "vscode",
+    "copilot",
+    "hermes",
+    "hermes-agent",
+    "claw-code",
+    "ai-coding",
+    "skills",
+    "chinese",
+    "中文",
+    "tdd",
+    "debugging",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShirlyTaylor73/superharness.git"
+  },
+  "homepage": "https://github.com/ShirlyTaylor73/superharness",
+  "author": "ShirlyTaylor73",
+  "license": "MIT"
+}
+

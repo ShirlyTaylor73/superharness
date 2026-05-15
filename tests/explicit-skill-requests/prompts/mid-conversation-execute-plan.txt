@@ -1,0 +1,4 @@
+I have a plan at docs/superharness/plans/auth-system.md that's ready to implement.
+
+parallel-executing-plans, please
+
