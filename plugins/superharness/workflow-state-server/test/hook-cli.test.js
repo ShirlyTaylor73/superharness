@@ -103,4 +103,74 @@ describe('workflow-pre-tool-use hook CLI', () => {
 
     expect(output.hookSpecificOutput).toBeUndefined();
   });
+
+  it('allows Write whose content mentions .superharness/ as a literal string', () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'superharness-hook-'));
+    const output = runNode(workflowPreToolUse, {
+      cwd,
+      input: {
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: {
+          file_path: path.join(cwd, 'docs', 'workflow.md'),
+          content: '# Workflow\n\nDo not edit .superharness/ directly.\n',
+        },
+      },
+    });
+
+    expect(output.hookSpecificOutput).toBeUndefined();
+  });
+
+  it('denies Write whose file_path targets .superharness/', () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'superharness-hook-'));
+    const output = runNode(workflowPreToolUse, {
+      cwd,
+      input: {
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: {
+          file_path: path.join(cwd, '.superharness', 'workflow-state.db'),
+          content: 'irrelevant content',
+        },
+      },
+    });
+
+    expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+  });
+
+  it('allows Edit whose new_string mentions .superharness/ but file_path is elsewhere', () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'superharness-hook-'));
+    const output = runNode(workflowPreToolUse, {
+      cwd,
+      input: {
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: {
+          file_path: path.join(cwd, 'README.md'),
+          old_string: 'placeholder',
+          new_string: 'See .superharness/ for details.',
+        },
+      },
+    });
+
+    expect(output.hookSpecificOutput).toBeUndefined();
+  });
+
+  it('denies Edit whose file_path is inside .superharness/', () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'superharness-hook-'));
+    const output = runNode(workflowPreToolUse, {
+      cwd,
+      input: {
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: {
+          file_path: path.join(cwd, '.superharness', 'foo.txt'),
+          old_string: 'a',
+          new_string: 'b',
+        },
+      },
+    });
+
+    expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+  });
 });

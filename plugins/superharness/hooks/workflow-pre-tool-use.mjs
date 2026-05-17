@@ -38,17 +38,39 @@ function isWriteCommand(command) {
     .test(command);
 }
 
-function shouldDeny(input) {
-  const toolName = input.tool_name || input.toolName || '';
-  const toolInput = input.tool_input || input.toolInput || {};
-  const strings = collectStrings(toolInput);
+function firstString(...candidates) {
+  for (const value of candidates) {
+    if (typeof value === 'string') return value;
+  }
+  return '';
+}
 
-  if (/^bash$/i.test(toolName)) {
-    const command = typeof toolInput.command === 'string' ? toolInput.command : strings.join('\n');
+function shouldDeny(input) {
+  const toolName = String(input.tool_name || input.toolName || '');
+  const toolInput = input.tool_input || input.toolInput || {};
+  const lowered = toolName.toLowerCase();
+
+  if (lowered === 'bash' || lowered === 'shell') {
+    const command = firstString(toolInput.command, ...collectStrings(toolInput));
     return pathTouchesWorkflowState(command) && isWriteCommand(command);
   }
 
-  return strings.some(pathTouchesWorkflowState);
+  if (lowered === 'write' || lowered === 'edit' || lowered === 'multiedit') {
+    const filePath = firstString(toolInput.file_path, toolInput.filePath);
+    return pathTouchesWorkflowState(filePath);
+  }
+
+  if (lowered === 'notebookedit') {
+    const notebookPath = firstString(toolInput.notebook_path, toolInput.notebookPath);
+    return pathTouchesWorkflowState(notebookPath);
+  }
+
+  if (lowered === 'apply_patch') {
+    return collectStrings(toolInput).some(pathTouchesWorkflowState);
+  }
+
+  return collectStrings(toolInput).some(pathTouchesWorkflowState)
+    && /write|edit|patch/i.test(toolName);
 }
 
 function denyOutput() {
