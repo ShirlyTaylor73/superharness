@@ -44,22 +44,35 @@ function hasWorkflowStateDeps(workflowStateDir) {
 
 function ensureWorkflowStateDeps(workflowStateDir) {
   if (hasWorkflowStateDeps(workflowStateDir)) return { ok: true };
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(
-    npmCommand,
-    ['install', '--omit=dev', '--no-audit', '--no-fund'],
-    {
+
+  // Node 22+ on Windows refuses to spawn .cmd / .bat without shell: true
+  // (CVE-2024-27980 mitigation). To avoid DEP0190 warnings from
+  // shell: true + args[], pass the full command as a single string and
+  // omit the args array on Windows. Arguments here are hard-coded constants,
+  // so there is no injection surface.
+  const isWin = process.platform === 'win32';
+  const result = isWin
+    ? spawnSync('npm.cmd install --omit=dev --no-audit --no-fund', {
       cwd: workflowStateDir,
       encoding: 'utf8',
       stdio: 'pipe',
-    },
-  );
+      shell: true,
+    })
+    : spawnSync('npm', ['install', '--omit=dev', '--no-audit', '--no-fund'], {
+      cwd: workflowStateDir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+
   if (result.status === 0 && hasWorkflowStateDeps(workflowStateDir)) {
     return { ok: true };
   }
   return {
     ok: false,
-    error: result.stderr || result.stdout || `npm install exited with ${result.status}`,
+    error: result.error?.message
+      || result.stderr
+      || result.stdout
+      || `npm install exited with ${result.status}`,
   };
 }
 
