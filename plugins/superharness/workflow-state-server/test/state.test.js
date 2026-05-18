@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   openWorkflowStateStore,
@@ -265,5 +266,63 @@ describe('workflow state store', () => {
         process.env.SUPERHARNESS_WORKFLOW_STATE_DB = previous;
       }
     }
+  });
+});
+
+describe('legacy state migration', () => {
+  it('migrates legacy done state to intake on read', () => {
+    const store = openWorkflowStateStore({ mode: 'memory' });
+    stores.push(store);
+    const workspaceRoot = '/workspace/legacy-test';
+    const workspaceId = path.resolve(workspaceRoot);
+    store.prepare(`
+      INSERT INTO workflow_state (workspace_id, state, status, previous_state, active_skill, task_summary, failure_summary, updated_at)
+      VALUES (?, 'done', 'completed', null, null, null, null, ?)
+    `).run(workspaceId, Date.now());
+
+    const state = getWorkflowState(store, { workspaceRoot });
+    expect(state.state).toBe('intake');
+
+    const history = listWorkflowHistory(store, { workspaceRoot });
+    const migration = history.find(h => h.to_state === 'intake' && h.from_state === 'done');
+    expect(migration).toBeDefined();
+    expect(migration.reason).toMatch(/legacy.*migration/i);
+    expect(migration.source).toBe('user-reset');
+  });
+
+  it('migrates legacy execution_choice state to planning', () => {
+    const store = openWorkflowStateStore({ mode: 'memory' });
+    stores.push(store);
+    const workspaceRoot = '/workspace/legacy-ec';
+    const workspaceId = path.resolve(workspaceRoot);
+    store.prepare(`
+      INSERT INTO workflow_state (workspace_id, state, status, previous_state, active_skill, task_summary, failure_summary, updated_at)
+      VALUES (?, 'execution_choice', 'active', null, null, null, null, ?)
+    `).run(workspaceId, Date.now());
+
+    const state = getWorkflowState(store, { workspaceRoot });
+    expect(state.state).toBe('planning');
+
+    const history = listWorkflowHistory(store, { workspaceRoot });
+    const migration = history.find(h => h.to_state === 'planning' && h.from_state === 'execution_choice');
+    expect(migration).toBeDefined();
+    expect(migration.reason).toMatch(/legacy.*migration/i);
+  });
+
+  it('does not migrate non-legacy states', () => {
+    const store = openWorkflowStateStore({ mode: 'memory' });
+    stores.push(store);
+    const workspaceRoot = '/workspace/normal-test';
+    const workspaceId = path.resolve(workspaceRoot);
+    store.prepare(`
+      INSERT INTO workflow_state (workspace_id, state, status, previous_state, active_skill, task_summary, failure_summary, updated_at)
+      VALUES (?, 'brainstorming', 'active', null, 'brainstorming', null, null, ?)
+    `).run(workspaceId, Date.now());
+
+    const state = getWorkflowState(store, { workspaceRoot });
+    expect(state.state).toBe('brainstorming');
+
+    const history = listWorkflowHistory(store, { workspaceRoot });
+    expect(history).toHaveLength(0);
   });
 });

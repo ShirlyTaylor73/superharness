@@ -137,6 +137,42 @@ function assertTransitionAllowed(workflowGraph, fromState, toState) {
   }
 }
 
+const LEGACY_STATE_MAP = {
+  done: 'intake',
+  execution_choice: 'planning',
+};
+
+function migrateLegacyState(store, workspaceId, current) {
+  if (!current) return current;
+  const target = LEGACY_STATE_MAP[current.state];
+  if (!target) return current;
+
+  const updatedAt = now();
+  store.prepare(`
+    UPDATE workflow_state
+       SET state = ?,
+           status = 'active',
+           previous_state = NULL,
+           active_skill = NULL,
+           updated_at = ?
+     WHERE workspace_id = ?
+  `).run(target, updatedAt, workspaceId);
+
+  insertLog(store, {
+    workspaceId,
+    fromState: current.state,
+    toState: target,
+    previousState: null,
+    reason: `legacy migration: ${current.state} -> ${target} (state removed in v3 state machine)`,
+    source: 'user-reset',
+    createdAt: updatedAt,
+  });
+
+  return getRow(store, workspaceId);
+}
+
+export { migrateLegacyState };
+
 export function resolveWorkflowDbPath({ workspaceRoot } = {}) {
   if (process.env.SUPERHARNESS_WORKFLOW_STATE_DB) {
     return process.env.SUPERHARNESS_WORKFLOW_STATE_DB;
@@ -182,7 +218,9 @@ export function initializeWorkflowState(store, {
   const graph = requireWorkflowGraph(workflowGraph);
   const workspaceId = requireWorkspaceRoot(workspaceRoot);
   const existing = getRow(store, workspaceId);
-  if (existing) return existing;
+  if (existing) {
+    return migrateLegacyState(store, workspaceId, existing) ?? existing;
+  }
 
   const trimmedReason = requireReason(reason);
   const state = upsertState(store, {
@@ -202,6 +240,14 @@ export function initializeWorkflowState(store, {
 }
 
 export function getWorkflowState(store, { workspaceRoot, workflowGraph } = {}) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const existing = getRow(store, workspaceId);
+  if (existing) {
+    return migrateLegacyState(store, workspaceId, existing) ?? existing;
+  }
+  if (!workflowGraph) {
+    return null;
+  }
   return initializeWorkflowState(store, {
     workspaceRoot,
     workflowGraph,
