@@ -1,50 +1,70 @@
 version: 1
-entryState: brainstorming
-terminalStates:
-  - done
+entryState: intake
+terminalStates: []
+
 states:
+  intake:
+    type: interactive
+    skill: intake
+    next:
+      - exploration
+      - trivial
+      - brainstorming
+
+  exploration:
+    type: interactive
+    skill: exploration
+    next:
+      - intake
+
+  trivial:
+    type: execution
+    skill: trivial
+    next:
+      - intake
+      - systematic_debugging
+
   brainstorming:
     type: interactive
     skill: brainstorming
     next:
       - planning
-      - systematic_debugging
+
   planning:
     type: interactive
-    skill: writing-plans
-    next:
-      - execution_choice
-      - systematic_debugging
-  execution_choice:
-    type: router
+    skill: planning
     next:
       - serial_execution
       - parallel_execution
-      - systematic_debugging
+
   serial_execution:
     type: execution
-    skill: serial-executing-plans
+    skill: serial-execution
     next:
       - verification
       - systematic_debugging
+
   parallel_execution:
     type: execution
-    skill: parallel-executing-plans
+    skill: parallel-execution
     next:
       - verification
       - systematic_debugging
+
   verification:
     type: gate
-    skill: verification-before-completion
+    skill: verification
     next:
       - finishing
       - systematic_debugging
+
   finishing:
     type: gate
-    skill: finishing-a-development-branch
+    skill: finishing
     next:
-      - done
+      - intake
       - systematic_debugging
+
   systematic_debugging:
     type: preemptive
     skill: systematic-debugging
@@ -52,5 +72,3 @@ states:
       - previous_state
       - serial_execution
       - planning
-  done:
-    type: terminal
