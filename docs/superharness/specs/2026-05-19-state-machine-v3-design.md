@@ -31,6 +31,7 @@
 | Middle | verification 失败去哪 | →debug / →debug+serial 双选 / →serial | **→debug** | 与 systematic-debugging 哲学一致（不做根因不许提修复） |
 | Middle | done 终态去留 | 删除 / 保留 / 作为 intake 别名 | **删除** | 一次会话可循环多任务，intake 兼任空闲态 |
 | Middle | 命名对齐范围 | 只新状态 / 全部重命名 / 重命名+保留别名 | **全部重命名** | 心智负担最低 |
+| Middle | execution_choice 去留 | 保留 router / 删除让 planning 直接给 AI 选 | **删除** | YAGNI——execution_choice 无 skill 只是 router 中转，planning 的 `next: [serial_execution, parallel_execution]` 直接表达可选项；省一跳、少一个 type、SKILL.md/render-context 不变 |
 | Leaf | trivial 的 type | execution / interactive / 新 type fast_execution | **execution** | type 语义一致（都是写代码阶段） |
 | Leaf | exploration 的 type | interactive / 新 type readonly / gate | **interactive** | exploration 是人机对话探索 |
 | Leaf | 哪些状态能抢占 debug | 除 intake 外都能 / 全都能 / 只执行类 | **执行类 + finishing**（serial/parallel/verification/trivial/finishing） | 抽象成 "接触实际制品/外部系统的状态"；finishing 因 git/CI 失败场景显式加入 |
@@ -38,7 +39,7 @@
 
 ## 3. 状态机骨架
 
-### 3.1 状态清单（11 个）
+### 3.1 状态清单（10 个）
 
 | 状态 | type | 绑定 skill | 备注 |
 |---|---|---|---|
@@ -46,8 +47,7 @@
 | `exploration` ⭐新 | interactive | `exploration` | 只读长会话 |
 | `trivial` ⭐新 | execution | `trivial` | 轻量改 + 自带验证 |
 | `brainstorming` | interactive | `brainstorming` | 不变 |
-| `planning` | interactive | `planning`（改自 writing-plans） | 重命名 |
-| `execution_choice` | router | — | 不变（无 skill） |
+| `planning` | interactive | `planning`（改自 writing-plans） | 重命名 + next 直接给 serial/parallel |
 | `serial_execution` | execution | `serial-execution`（改自 serial-executing-plans） | 重命名 |
 | `parallel_execution` | execution | `parallel-execution`（改自 parallel-executing-plans） | 重命名 |
 | `verification` | gate | `verification`（改自 verification-before-completion） | 重命名 |
@@ -57,9 +57,9 @@
 **元数据：**
 - `entryState`: `brainstorming` → **`intake`**
 - `terminalStates`: `[done]` → **`[]`**（空数组，一次会话可循环多任务）
-- 删除状态：`done`
+- 删除状态：`done`, `execution_choice`
 
-### 3.2 转换表（21 条边）
+### 3.2 转换表（20 条边）
 
 | 状态 | next |
 |---|---|
@@ -67,15 +67,14 @@
 | `exploration` | `[intake]` |
 | `trivial` | `[intake, systematic_debugging]` |
 | `brainstorming` | `[planning]` |
-| `planning` | `[execution_choice]` |
-| `execution_choice` | `[serial_execution, parallel_execution]` |
+| `planning` | `[serial_execution, parallel_execution]` |
 | `serial_execution` | `[verification, systematic_debugging]` |
 | `parallel_execution` | `[verification, systematic_debugging]` |
 | `verification` | `[finishing, systematic_debugging]` |
 | `finishing` | `[intake, systematic_debugging]` |
 | `systematic_debugging` | `[previous_state, serial_execution, planning]` |
 
-**抢占规则**：可转 `systematic_debugging` 的状态 = 接触实际制品/外部系统的状态（`serial_execution` / `parallel_execution` / `verification` / `trivial` / `finishing`）。其余对话或瞬时态不能抢占。
+**抢占规则**：可转 `systematic_debugging` 的状态 = 接触实际制品/外部系统的状态（`serial_execution` / `parallel_execution` / `verification` / `trivial` / `finishing`）。其余对话态不能抢占。
 
 ### 3.3 流程图
 
@@ -87,7 +86,6 @@ flowchart TD
     Triv[trivial]:::execution
     BS[brainstorming]:::interactive
     PL[planning]:::interactive
-    EC{execution_choice}:::router
     SE[serial_execution]:::execution
     PE[parallel_execution]:::execution
     VF[verification]:::gate
@@ -102,9 +100,8 @@ flowchart TD
     Triv --> Intake
 
     BS --> PL
-    PL --> EC
-    EC -->|串行| SE
-    EC -->|并行| PE
+    PL -->|串行| SE
+    PL -->|并行| PE
     SE --> VF
     PE --> VF
     VF --> FN
@@ -216,7 +213,7 @@ reason 必须明确写出**选这条路的理由**（落审计）。
 
 | 文件 / 目录 | 动作 |
 |---|---|
-| `plugins/superharness/workflow/default-workflow.yaml` | 改 entryState、terminalStates、删 done、改 finishing.next、删 brainstorming/planning/execution_choice 的 debug 边、新增 intake/exploration/trivial 三状态、所有 `skill:` 字段换裸名 |
+| `plugins/superharness/workflow/default-workflow.yaml` | 改 entryState、terminalStates、删 done 和 execution_choice、改 planning.next（直接给 serial/parallel）、改 finishing.next、删 brainstorming/planning 的 debug 边、新增 intake/exploration/trivial 三状态、所有 `skill:` 字段换裸名 |
 | `plugins/superharness/skills/writing-plans/` | 重命名 → `planning/`（含 SKILL.md frontmatter `name`） |
 | `plugins/superharness/skills/serial-executing-plans/` | 重命名 → `serial-execution/` |
 | `plugins/superharness/skills/parallel-executing-plans/` | 重命名 → `parallel-execution/` |
@@ -240,8 +237,9 @@ reason 必须明确写出**选这条路的理由**（落审计）。
 
 | 已有 state | 处理 |
 |---|---|
-| `brainstorming` / `planning` / `execution_choice` / `serial_execution` / `parallel_execution` / `verification` / `finishing` / `systematic_debugging` | 保留（这些状态没删，next 变化不影响当前态读取） |
-| `done`（已删除） | **自动迁移**：启动时检测到 `done`，转 `intake` + transition_log 记一条 `done → intake (legacy migration)` 事件 |
+| `brainstorming` / `planning` / `serial_execution` / `parallel_execution` / `verification` / `finishing` / `systematic_debugging` | 保留（这些状态没删，next 变化不影响当前态读取） |
+| `done`（已删除） | **自动迁移**到 `intake` + transition_log 记 `done → intake (legacy migration)` 事件 |
+| `execution_choice`（已删除） | **自动迁移**到 `planning`（用户当时正要选执行模式，回 planning 让 AI 重新决定）+ transition_log 记 `execution_choice → planning (legacy migration)` 事件 |
 | 其他未知 state | 兜底转 `intake`，记 migration 事件 |
 
 迁移逻辑位置：[state.js](../../../plugins/superharness/workflow-state-server/state.js) 的 `initializeWorkflowState` / `getOrInitState`。
@@ -259,14 +257,15 @@ reason 必须明确写出**选这条路的理由**（落审计）。
 ### 5.4 测试 / 验证清单
 
 - [ ] `npm test`（workflow-state-server 单元测试）全绿
-- [ ] 新增 8 个 transition 合法性测试：
+- [ ] 新增 transition 合法性测试：
   - `intake → exploration` 允许
   - `intake → trivial` 允许
   - `intake → brainstorming` 允许
   - `trivial → systematic_debugging` 允许
+  - `planning → serial_execution` 允许
+  - `planning → parallel_execution` 允许
   - `brainstorming → systematic_debugging` **拒绝**
   - `planning → systematic_debugging` **拒绝**
-  - `execution_choice → systematic_debugging` **拒绝**
   - `finishing → intake` 允许
 - [ ] 迁移测试：构造 db with `state='done'`，初始化后断言变成 `intake` + transition_log 多了一条 legacy migration
 - [ ] render-context 测试：注入 intake/exploration/trivial 时 SKILL.md 正确取出
