@@ -1,5 +1,5 @@
 ---
-name: serial-executing-plans
+name: serial-execution
 description: 当你有一份书面实现计划需要执行，并且计划较小或平台不支持子代理，需要串行执行并设有审查检查点时使用
 ---
 

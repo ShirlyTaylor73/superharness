@@ -1,5 +1,5 @@
 ---
-name: writing-plans
+name: planning
 description: 当你有规格说明或需求用于多步骤任务，或在发现现有计划存在问题需要修改时使用，在动手写代码之前
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: parallel-executing-plans
+name: parallel-execution
 description: 当平台支持子代理且需要在当前会话中执行包含独立任务的实现计划时使用，尤其是计划较大时，通过 wave 化并行调度实现高效执行和审查。
 ---
 
