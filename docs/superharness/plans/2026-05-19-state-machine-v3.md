@@ -659,9 +659,9 @@ git commit -m "feat(validate): require intake state and entryState=intake"
 
 ---
 
-### 任务 9：更新 4 个测试 fixture + 新增 transition 合法性测试 + YAML 一致性测试
+### 任务 9：更新 4 个测试 fixture + 新增 transition 合法性测试
 
-**依赖：** 无
+**依赖：** 任务 1
 **文件集：** `plugins/superharness/workflow-state-server/test/server.test.js`, `plugins/superharness/workflow-state-server/test/state.test.js`, `plugins/superharness/workflow-state-server/test/validate-workflow.test.js`, `plugins/superharness/workflow-state-server/test/render-context.test.js`
 **导出/变更接口：** `test/validate-workflow.test.js::validConfig`
 **消费接口：** `validate-workflow.js::buildWorkflowGraph`, `state.js::createTools`
@@ -751,39 +751,22 @@ describe('v3 transitions', () => {
 });
 ```
 
-- [ ] **步骤 3：新增 YAML 一致性测试**
-
-在 `validate-workflow.test.js` 新增：
-
-```js
-it('default-workflow.yaml matches hardcoded fixture (drift guard)', () => {
-  const loaded = loadWorkflowConfig({ pluginRoot: path.resolve(__dirname, '..', '..') });
-  const fixture = validConfig();
-  expect(loaded.entryState).toBe(fixture.entryState);
-  expect(loaded.terminalStates).toEqual(fixture.terminalStates);
-  expect(Object.keys(loaded.states).sort()).toEqual(Object.keys(fixture.states).sort());
-  for (const [name, state] of Object.entries(loaded.states)) {
-    expect(state).toEqual(fixture.states[name]);
-  }
-});
-```
-
-这条测试修了之前发现的 fixture drift gap（YAML 改了测试不会失败）。
-
-- [ ] **步骤 4：运行全量测试**
+- [ ] **步骤 3：运行全量测试**
 
 ```bash
 cd plugins/superharness/workflow-state-server
 npm.cmd test
 ```
 
-预期：全绿（包括新增的所有 transition cases、迁移测试、YAML 一致性测试）
+预期：全绿（包括新增的所有 transition cases、迁移测试）
 
-- [ ] **步骤 5：Commit**
+注：YAML 一致性测试（修 historical fixture drift gap）依赖 T8 的真 YAML 才能通过，推迟到本计划完成后的独立 PR 处理。
+
+- [ ] **步骤 4：Commit**
 
 ```bash
 git add plugins/superharness/workflow-state-server/test/
-git commit -m "test: update fixtures + add v3 transition tests + YAML drift guard"
+git commit -m "test: update fixtures + add v3 transition tests"
 ```
 
 ---
@@ -799,7 +782,7 @@ git commit -m "test: update fixtures + add v3 transition tests + YAML drift guar
 - ✓ legacy state migrator — 任务 1
 - ✓ intake 硬约束 — 任务 10
 - ✓ 测试 fixture 更新 — 任务 9
-- ✓ YAML 一致性测试 — 任务 9
+- ⏭️ YAML 一致性测试 — 推迟到独立 PR（依赖 T8 输出，与 wave 调度耦合）
 - ✓ writing-skills 子技能注入 — 任务 3-7
 - ✓ 范围外（multi-cycle epic / sub-agent / check 自修复 / journal）— 规格 § 6 明示 defer，本计划不包含
 
@@ -821,7 +804,7 @@ git commit -m "test: update fixtures + add v3 transition tests + YAML drift guar
 - 任务 6：deps {2} ⊆ {1..5} ✓
 - 任务 7：deps {2} ⊆ {1..6} ✓
 - 任务 8：deps {2,3,4,5} ⊆ {1..7} ✓
-- 任务 9：deps 无 ✓
+- 任务 9：deps {1} ⊆ {1..8} ✓
 - 任务 10：deps {9} ⊆ {1..9} ✓
 
 **5. 类型/命名一致性：**
@@ -837,8 +820,9 @@ git commit -m "test: update fixtures + add v3 transition tests + YAML drift guar
 
 **Critical Path：** 任务 2 → 任务 8 → Wave FINAL（length 3）
 
-- **Wave 1（无依赖）：** 任务 1, 任务 2, 任务 3, 任务 4, 任务 5, 任务 9
-- **Wave 2（依赖 Wave 1）：** 任务 6（依赖 2）, 任务 7（依赖 2）, 任务 8（依赖 2, 3, 4, 5）, 任务 10（依赖 9）
+- **Wave 1（无依赖）：** 任务 1, 任务 2, 任务 3, 任务 4, 任务 5
+- **Wave 2（依赖 Wave 1）：** 任务 6（依赖 2）, 任务 7（依赖 2）, 任务 8（依赖 2, 3, 4, 5）, 任务 9（依赖 1）
+- **Wave 3（依赖 Wave 2）：** 任务 10（依赖 9）
 - **Wave FINAL（所有任务完成后）：** F1 规格合规、F2 代码质量、F3 真实手测（含 `npm test` 全绿 + OpenCode 插件契约测试 + skill triggering 测试）、F4 范围保真
 
 ---
