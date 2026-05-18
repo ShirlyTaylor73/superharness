@@ -54,7 +54,7 @@ describe('workflow-context hook CLI', () => {
     });
 
     expect(output.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
-    expect(output.hookSpecificOutput.additionalContext).toContain('current_state: brainstorming');
+    expect(output.hookSpecificOutput.additionalContext).toContain('current_state: intake');
   });
 
   it('renders stop-work context on configuration failure', () => {

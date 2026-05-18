@@ -9,61 +9,72 @@ import {
 } from '../validate-workflow.js';
 
 const installedSkills = new Set([
+  'intake',
+  'exploration',
+  'trivial',
   'brainstorming',
-  'writing-plans',
-  'serial-executing-plans',
-  'parallel-executing-plans',
-  'verification-before-completion',
-  'finishing-a-development-branch',
+  'planning',
+  'serial-execution',
+  'parallel-execution',
+  'verification',
+  'finishing',
   'systematic-debugging',
 ]);
 
 const validConfig = () => ({
   version: 1,
-  entryState: 'brainstorming',
-  terminalStates: ['done'],
+  entryState: 'intake',
+  terminalStates: [],
   states: {
+    intake: {
+      type: 'interactive',
+      skill: 'intake',
+      next: ['exploration', 'trivial', 'brainstorming'],
+    },
+    exploration: {
+      type: 'interactive',
+      skill: 'exploration',
+      next: ['intake'],
+    },
+    trivial: {
+      type: 'execution',
+      skill: 'trivial',
+      next: ['intake', 'systematic_debugging'],
+    },
     brainstorming: {
       type: 'interactive',
       skill: 'brainstorming',
-      next: ['planning', 'systematic_debugging'],
+      next: ['planning'],
     },
     planning: {
       type: 'interactive',
-      skill: 'writing-plans',
-      next: ['execution_choice', 'systematic_debugging'],
-    },
-    execution_choice: {
-      type: 'router',
-      next: ['serial_execution', 'parallel_execution', 'systematic_debugging'],
+      skill: 'planning',
+      next: ['serial_execution', 'parallel_execution'],
     },
     serial_execution: {
       type: 'execution',
-      skill: 'serial-executing-plans',
+      skill: 'serial-execution',
       next: ['verification', 'systematic_debugging'],
     },
     parallel_execution: {
       type: 'execution',
-      skill: 'parallel-executing-plans',
+      skill: 'parallel-execution',
       next: ['verification', 'systematic_debugging'],
     },
     verification: {
       type: 'gate',
-      skill: 'verification-before-completion',
+      skill: 'verification',
       next: ['finishing', 'systematic_debugging'],
     },
     finishing: {
       type: 'gate',
-      skill: 'finishing-a-development-branch',
-      next: ['done', 'systematic_debugging'],
+      skill: 'finishing',
+      next: ['intake', 'systematic_debugging'],
     },
     systematic_debugging: {
       type: 'preemptive',
       skill: 'systematic-debugging',
       next: ['previous_state', 'serial_execution', 'planning'],
-    },
-    done: {
-      type: 'terminal',
     },
   },
 });
@@ -71,9 +82,10 @@ const validConfig = () => ({
 describe('validateWorkflowConfig', () => {
   it('accepts the default workflow shape', () => {
     const graph = buildWorkflowGraph(validConfig(), { installedSkills });
-    expect(graph.entryState).toBe('brainstorming');
-    expect(graph.states.get('planning').skill).toBe('writing-plans');
-    expect(graph.states.get('done').terminal).toBe(true);
+    expect(graph.entryState).toBe('intake');
+    expect(graph.states.get('planning').skill).toBe('planning');
+    expect(graph.states.get('intake').skill).toBe('intake');
+    expect(graph.terminalStates.size).toBe(0);
   });
 
   it('rejects a missing entryState', () => {
@@ -83,9 +95,9 @@ describe('validateWorkflowConfig', () => {
 
   it('rejects a next target that does not exist', () => {
     const config = validConfig();
-    config.states.brainstorming.next = ['missing_state'];
+    config.states.intake.next = ['missing_state'];
     expect(() => validateWorkflowConfig(config, { installedSkills }))
-      .toThrow(/brainstorming.*next.*missing_state/);
+      .toThrow(/intake.*next.*missing_state/);
   });
 
   it('rejects a state that references a missing skill', () => {
@@ -96,10 +108,12 @@ describe('validateWorkflowConfig', () => {
   });
 
   it('rejects a terminal state with a skill', () => {
+    // v3 has no built-in terminal states. Synthesise one for this check.
     const config = validConfig();
-    config.states.done.skill = 'brainstorming';
+    config.terminalStates = ['parked'];
+    config.states.parked = { type: 'terminal', skill: 'intake' };
     expect(() => validateWorkflowConfig(config, { installedSkills }))
-      .toThrow(/done.*terminal.*skill/);
+      .toThrow(/parked.*terminal.*skill/);
   });
 
   it('rejects a non-terminal state without exits', () => {

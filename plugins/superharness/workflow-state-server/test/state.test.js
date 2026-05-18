@@ -13,61 +13,72 @@ import {
 import { buildWorkflowGraph } from '../validate-workflow.js';
 
 const installedSkills = new Set([
+  'intake',
+  'exploration',
+  'trivial',
   'brainstorming',
-  'writing-plans',
-  'serial-executing-plans',
-  'parallel-executing-plans',
-  'verification-before-completion',
-  'finishing-a-development-branch',
+  'planning',
+  'serial-execution',
+  'parallel-execution',
+  'verification',
+  'finishing',
   'systematic-debugging',
 ]);
 
 const workflowGraph = buildWorkflowGraph({
   version: 1,
-  entryState: 'brainstorming',
-  terminalStates: ['done'],
+  entryState: 'intake',
+  terminalStates: [],
   states: {
+    intake: {
+      type: 'interactive',
+      skill: 'intake',
+      next: ['exploration', 'trivial', 'brainstorming'],
+    },
+    exploration: {
+      type: 'interactive',
+      skill: 'exploration',
+      next: ['intake'],
+    },
+    trivial: {
+      type: 'execution',
+      skill: 'trivial',
+      next: ['intake', 'systematic_debugging'],
+    },
     brainstorming: {
       type: 'interactive',
       skill: 'brainstorming',
-      next: ['planning', 'systematic_debugging'],
+      next: ['planning'],
     },
     planning: {
       type: 'interactive',
-      skill: 'writing-plans',
-      next: ['execution_choice', 'systematic_debugging'],
-    },
-    execution_choice: {
-      type: 'router',
-      next: ['serial_execution', 'parallel_execution', 'systematic_debugging'],
+      skill: 'planning',
+      next: ['serial_execution', 'parallel_execution'],
     },
     serial_execution: {
       type: 'execution',
-      skill: 'serial-executing-plans',
+      skill: 'serial-execution',
       next: ['verification', 'systematic_debugging'],
     },
     parallel_execution: {
       type: 'execution',
-      skill: 'parallel-executing-plans',
+      skill: 'parallel-execution',
       next: ['verification', 'systematic_debugging'],
     },
     verification: {
       type: 'gate',
-      skill: 'verification-before-completion',
+      skill: 'verification',
       next: ['finishing', 'systematic_debugging'],
     },
     finishing: {
       type: 'gate',
-      skill: 'finishing-a-development-branch',
-      next: ['done', 'systematic_debugging'],
+      skill: 'finishing',
+      next: ['intake', 'systematic_debugging'],
     },
     systematic_debugging: {
       type: 'preemptive',
       skill: 'systematic-debugging',
       next: ['previous_state', 'serial_execution', 'planning'],
-    },
-    done: {
-      type: 'terminal',
     },
   },
 }, { installedSkills });
@@ -80,6 +91,27 @@ function openStore() {
   return store;
 }
 
+// Seed the store at an arbitrary state for tests whose pre-conditions are not
+// reachable from intake without a long transition chain. Bypasses transition
+// validation by writing directly via raw SQL.
+function seedState(store, { workspaceRoot, state, previousState = null }) {
+  const workspaceId = path.resolve(workspaceRoot);
+  store.prepare(`
+    UPDATE workflow_state
+       SET state = ?,
+           previous_state = ?,
+           active_skill = ?,
+           updated_at = ?
+     WHERE workspace_id = ?
+  `).run(
+    state,
+    previousState,
+    workflowGraph.states.get(state)?.skill ?? null,
+    Date.now(),
+    workspaceId,
+  );
+}
+
 afterEach(() => {
   while (stores.length) {
     stores.pop().close();
@@ -87,7 +119,7 @@ afterEach(() => {
 });
 
 describe('workflow state store', () => {
-  it('initializes an empty workspace to brainstorming', () => {
+  it('initializes an empty workspace to intake', () => {
     const store = openStore();
     const state = initializeWorkflowState(store, {
       workspaceRoot: '/workspace/a',
@@ -95,8 +127,8 @@ describe('workflow state store', () => {
       reason: 'start',
     });
 
-    expect(state.state).toBe('brainstorming');
-    expect(state.active_skill).toBe('brainstorming');
+    expect(state.state).toBe('intake');
+    expect(state.active_skill).toBe('intake');
     expect(state.status).toBe('active');
   });
 
@@ -107,32 +139,33 @@ describe('workflow state store', () => {
     const state = transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
-      to_state: 'planning',
-      reason: 'requirements are clear',
+      from_state: 'intake',
+      to_state: 'brainstorming',
+      reason: 'requirements need brainstorming',
       source: 'agent-tool',
     });
 
-    expect(state.state).toBe('planning');
-    expect(state.active_skill).toBe('writing-plans');
-    expect(listWorkflowHistory(store, { workspaceRoot: '/workspace/a' }).at(-1).to_state).toBe('planning');
+    expect(state.state).toBe('brainstorming');
+    expect(state.active_skill).toBe('brainstorming');
+    expect(listWorkflowHistory(store, { workspaceRoot: '/workspace/a' }).at(-1).to_state).toBe('brainstorming');
   });
 
   it('rejects an illegal transition without changing state', () => {
     const store = openStore();
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
 
+    // intake -> finishing skips the entire dev cycle and is not a legal v3 edge
     expect(() => transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
+      from_state: 'intake',
       to_state: 'finishing',
       reason: 'skip',
       source: 'agent-tool',
-    })).toThrow(/brainstorming.*finishing/);
+    })).toThrow(/intake.*finishing/);
 
     expect(getWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph }).state)
-      .toBe('brainstorming');
+      .toBe('intake');
   });
 
   it('rejects from_state mismatch', () => {
@@ -143,10 +176,10 @@ describe('workflow state store', () => {
       workspaceRoot: '/workspace/a',
       workflowGraph,
       from_state: 'planning',
-      to_state: 'execution_choice',
+      to_state: 'serial_execution',
       reason: 'wrong source',
       source: 'agent-tool',
-    })).toThrow(/from_state.*planning.*current.*brainstorming/);
+    })).toThrow(/from_state.*planning.*current.*intake/);
   });
 
   it('rejects an empty reason', () => {
@@ -156,8 +189,8 @@ describe('workflow state store', () => {
     expect(() => transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
-      to_state: 'planning',
+      from_state: 'intake',
+      to_state: 'brainstorming',
       reason: ' ',
       source: 'agent-tool',
     })).toThrow(/reason/);
@@ -166,37 +199,42 @@ describe('workflow state store', () => {
   it('records previous_state when entering systematic_debugging', () => {
     const store = openStore();
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
+    // Seed to serial_execution (a state with a systematic_debugging exit in v3)
+    seedState(store, { workspaceRoot: '/workspace/a', state: 'serial_execution' });
 
     const state = transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
+      from_state: 'serial_execution',
       to_state: 'systematic_debugging',
       reason: 'test failure',
       source: 'agent-tool',
     });
 
     expect(state.state).toBe('systematic_debugging');
-    expect(state.previous_state).toBe('brainstorming');
+    expect(state.previous_state).toBe('serial_execution');
   });
 
   it('resolves previous_state only from systematic_debugging', () => {
     const store = openStore();
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
 
+    // previous_state from intake is illegal (only systematic_debugging may use it)
     expect(() => transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
+      from_state: 'intake',
       to_state: 'previous_state',
       reason: 'return',
       source: 'agent-tool',
     })).toThrow(/previous_state.*systematic_debugging/);
 
+    // Seed to serial_execution then preempt into systematic_debugging
+    seedState(store, { workspaceRoot: '/workspace/a', state: 'serial_execution' });
     transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
+      from_state: 'serial_execution',
       to_state: 'systematic_debugging',
       reason: 'debug',
       source: 'agent-tool',
@@ -211,7 +249,7 @@ describe('workflow state store', () => {
       source: 'agent-tool',
     });
 
-    expect(state.state).toBe('brainstorming');
+    expect(state.state).toBe('serial_execution');
     expect(state.previous_state).toBeNull();
   });
 
@@ -227,19 +265,19 @@ describe('workflow state store', () => {
       reason: 'classified user request',
     });
 
-    expect(state.state).toBe('brainstorming');
+    expect(state.state).toBe('intake');
     expect(state.task_summary).toBe('implement state machine');
     expect(state.failure_summary).toBe('none');
   });
 
-  it('resets state to brainstorming and writes a user-reset log', () => {
+  it('resets state to intake and writes a user-reset log', () => {
     const store = openStore();
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
     transitionWorkflowState(store, {
       workspaceRoot: '/workspace/a',
       workflowGraph,
-      from_state: 'brainstorming',
-      to_state: 'planning',
+      from_state: 'intake',
+      to_state: 'brainstorming',
       reason: 'ready',
       source: 'agent-tool',
     });
@@ -250,7 +288,7 @@ describe('workflow state store', () => {
       reason: 'manual reset',
     });
 
-    expect(state.state).toBe('brainstorming');
+    expect(state.state).toBe('intake');
     expect(listWorkflowHistory(store, { workspaceRoot: '/workspace/a' }).at(-1).source).toBe('user-reset');
   });
 
