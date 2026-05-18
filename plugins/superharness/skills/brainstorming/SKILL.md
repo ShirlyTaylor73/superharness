@@ -40,7 +40,7 @@ description: 在任何创意工作（构建功能、设计组件、新增能力�
 6. **编写设计文档** — 保存到 `docs/superharness/specs/YYYY-MM-DD-<topic>-design.md` 并 commit
 7. **规格自检** — 快速内联检查占位符、矛盾、模糊性、范围（详见下方）
 8. **用户审查书面规格** — 在继续之前请用户审查规格文件
-9. **过渡到实现** — 调用 writing-plans 技能创建实现计划
+9. **过渡到实现** — transition 到 planning 状态创建实现计划
 
 ## 流程图
 
@@ -56,7 +56,7 @@ digraph brainstorming {
     "编写设计文档" [shape=box];
     "规格自检\n（内联修复）" [shape=box];
     "用户审查规格?" [shape=diamond];
-    "调用 writing-plans 技能" [shape=doublecircle];
+    "transition 到 planning" [shape=doublecircle];
 
     "探索项目上下文\n（能查代码就别问）" -> "有视觉相关问题?";
     "有视觉相关问题?" -> "提供视觉伴侣\n（独立消息，不含其他内容）" [label="是"];
@@ -70,11 +70,11 @@ digraph brainstorming {
     "编写设计文档" -> "规格自检\n（内联修复）";
     "规格自检\n（内联修复）" -> "用户审查规格?";
     "用户审查规格?" -> "编写设计文档" [label="要求修改"];
-    "用户审查规格?" -> "调用 writing-plans 技能" [label="批准"];
+    "用户审查规格?" -> "transition 到 planning" [label="批准"];
 }
 ```
 
-**终止状态是调用 writing-plans。** 不要调用 frontend-design、mcp-builder 或任何其他实现技能。头脑风暴之后你唯一要调用的技能是 writing-plans。
+**终止状态是 transition 到 planning。** 不要调用 frontend-design、mcp-builder 或任何其他实现技能。头脑风暴之后你唯一要进入的状态是 planning。
 
 ## 流程详述
 
@@ -145,8 +145,8 @@ digraph brainstorming {
 
 **实现：**
 
-- 调用 writing-plans 技能创建详细的实现计划
-- 不要调用任何其他技能。writing-plans 是下一步。
+- transition 到 planning 状态创建详细的实现计划
+- 不要调用任何其他技能。planning 是下一步。
 
 ## 核心原则
 
