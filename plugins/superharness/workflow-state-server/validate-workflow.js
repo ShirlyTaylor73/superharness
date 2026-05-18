@@ -68,6 +68,14 @@ export function validateWorkflowConfig(config, { installedSkills } = {}) {
     fail(`entryState references missing state ${config.entryState}`);
   }
 
+  // intake hard constraint (v3 state machine requires intake as entryState)
+  if (!Object.hasOwn(config.states, 'intake')) {
+    fail('intake state must exist (entry state for v3 state machine)');
+  }
+  if (config.entryState !== 'intake') {
+    fail(`entryState must be 'intake', got '${config.entryState}'`);
+  }
+
   const terminalStates = normalizeStringList(config.terminalStates ?? [], 'terminalStates');
   const terminalSet = new Set(terminalStates);
 

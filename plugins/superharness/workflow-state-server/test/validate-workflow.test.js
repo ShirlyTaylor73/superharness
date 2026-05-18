@@ -129,6 +129,21 @@ describe('validateWorkflowConfig', () => {
     expect(() => validateWorkflowConfig(config, { installedSkills }))
       .toThrow(/systematic_debugging.*previous_state/);
   });
+
+  it('rejects config missing intake state', () => {
+    const config = validConfig();
+    delete config.states.intake;
+    config.entryState = 'brainstorming';
+    expect(() => validateWorkflowConfig(config, { installedSkills }))
+      .toThrow(/intake/i);
+  });
+
+  it('rejects config where intake exists but is not entryState', () => {
+    const config = validConfig();
+    config.entryState = 'brainstorming';
+    expect(() => validateWorkflowConfig(config, { installedSkills }))
+      .toThrow(/intake.*entryState|entryState.*intake/i);
+  });
 });
 
 describe('loadWorkflowConfig', () => {
