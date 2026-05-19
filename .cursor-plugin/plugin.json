@@ -1,7 +1,7 @@
 {
   "name": "superharness",
   "displayName": "Superharness",
-  "description": "Programmatic workflow harness for AI coding agents: 19 active skills, hooks, and MCP state management.",
+  "description": "Programmatic workflow harness for AI coding agents: state-machine driven skills, hooks, and MCP state management.",
   "version": "1.1.9",
   "author": {
     "name": "ShirlyTaylor73",
