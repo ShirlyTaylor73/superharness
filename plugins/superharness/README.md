@@ -4,7 +4,7 @@ This plugin package contains the Superharness runtime for AI coding agents.
 
 It provides:
 
-- 19 active skills for structured software development workflows.
+- State-machine driven skills for structured software development workflows.
 - Claude Code / Codex hooks for workflow context injection and `.superharness/` write protection.
 - An OpenCode plugin that registers active skills, injects workflow context through `experimental.chat.system.transform`, and registers the `superharness-workflow-state` MCP.
 - A programmatic workflow state server backed by SQLite and configured by YAML.
