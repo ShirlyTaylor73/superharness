@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Integration Test: parallel-executing-plans workflow
+# Integration Test: parallel-execution workflow
 # Actually executes a plan and verifies the new workflow behaviors
 set -euo pipefail
 
@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
 
 echo "========================================"
-echo " Integration Test: parallel-executing-plans"
+echo " Integration Test: parallel-execution"
 echo "========================================"
 echo ""
 echo "This test executes a real plan using the skill and verifies:"
@@ -48,7 +48,7 @@ mkdir -p src test docs/superharness/plans
 cat > docs/superharness/plans/implementation-plan.md <<'EOF'
 # Test Implementation Plan
 
-This is a minimal plan to test the parallel-executing-plans workflow.
+This is a minimal plan to test the parallel-execution workflow.
 
 ## Task 1: Create Add Function
 
@@ -115,13 +115,13 @@ echo ""
 echo "Project setup complete. Starting execution..."
 echo ""
 
-# Run Claude with parallel-executing-plans
+# Run Claude with parallel-execution
 # Capture full output to analyze
 OUTPUT_FILE="$TEST_PROJECT/claude-output.txt"
 
 # Create prompt file
 cat > "$TEST_PROJECT/prompt.txt" <<'EOF'
-I want you to execute the implementation plan at docs/superharness/plans/implementation-plan.md using the parallel-executing-plans skill.
+I want you to execute the implementation plan at docs/superharness/plans/implementation-plan.md using the parallel-execution skill.
 
 IMPORTANT: Follow the skill exactly. I will be verifying that you:
 1. Read the plan once at the beginning
@@ -136,7 +136,7 @@ EOF
 # Note: We use a longer timeout since this is integration testing
 # Use --allowed-tools to enable tool usage in headless mode
 # IMPORTANT: Run from superharness directory so local dev skills are available
-PROMPT="Change to directory $TEST_PROJECT and then execute the implementation plan at docs/superharness/plans/implementation-plan.md using the parallel-executing-plans skill.
+PROMPT="Change to directory $TEST_PROJECT and then execute the implementation plan at docs/superharness/plans/implementation-plan.md using the parallel-execution skill.
 
 IMPORTANT: Follow the skill exactly. I will be verifying that you:
 1. Read the plan once at the beginning
@@ -186,8 +186,8 @@ echo ""
 
 # Test 1: Skill was invoked
 echo "Test 1: Skill tool invoked..."
-if grep -q '"name":"Skill".*"skill":"superharness:parallel-executing-plans"' "$SESSION_FILE"; then
-    echo "  [PASS] parallel-executing-plans skill was invoked"
+if grep -q '"name":"Skill".*"skill":"superharness:parallel-execution"' "$SESSION_FILE"; then
+    echo "  [PASS] parallel-execution skill was invoked"
 else
     echo "  [FAIL] Skill was not invoked"
     FAILED=$((FAILED + 1))
@@ -295,7 +295,7 @@ if [ $FAILED -eq 0 ]; then
     echo "STATUS: PASSED"
     echo "All verification tests passed!"
     echo ""
-    echo "The parallel-executing-plans skill correctly:"
+    echo "The parallel-execution skill correctly:"
     echo "  ✓ Reads plan once at start"
     echo "  ✓ Provides full task text to subagents"
     echo "  ✓ Enforces self-review"

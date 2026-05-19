@@ -70,10 +70,10 @@ claude -p "Good analysis. I've already written the plan to docs/superharness/pla
 echo "Turn 2 complete."
 echo ""
 
-# Turn 3: The critical test - ask for parallel-executing-plans
-echo ">>> Turn 3: Requesting parallel-executing-plans..."
+# Turn 3: The critical test - ask for parallel-execution
+echo ">>> Turn 3: Requesting parallel-execution..."
 TURN3_LOG="$OUTPUT_DIR/turn3.json"
-claude -p "parallel-executing-plans, please" \
+claude -p "parallel-execution, please" \
     --continue \
     --plugin-dir "$PLUGIN_DIR" \
     --dangerously-skip-permissions \
@@ -87,12 +87,12 @@ echo ""
 echo "=== Results ==="
 
 # Check if skill was triggered in Turn 3
-SKILL_PATTERN='"skill":"([^"]*:)?parallel-executing-plans"'
+SKILL_PATTERN='"skill":"([^"]*:)?parallel-execution"'
 if grep -q '"name":"Skill"' "$TURN3_LOG" && grep -qE "$SKILL_PATTERN" "$TURN3_LOG"; then
-    echo "PASS: Skill 'parallel-executing-plans' was triggered in Turn 3"
+    echo "PASS: Skill 'parallel-execution' was triggered in Turn 3"
     TRIGGERED=true
 else
-    echo "FAIL: Skill 'parallel-executing-plans' was NOT triggered in Turn 3"
+    echo "FAIL: Skill 'parallel-execution' was NOT triggered in Turn 3"
     TRIGGERED=false
 fi
 

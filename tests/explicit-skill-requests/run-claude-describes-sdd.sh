@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test where Claude explicitly describes parallel-executing-plans before user requests it
+# Test where Claude explicitly describes parallel-execution before user requests it
 # This mimics the original failure scenario
 
 set -e
@@ -36,7 +36,7 @@ EOF
 
 # Turn 1: Have Claude describe execution options including SDD
 echo ">>> Turn 1: Ask Claude to describe execution options..."
-claude -p "I have a plan at docs/superharness/plans/auth-system.md. Tell me about my options for executing it, including what parallel-executing-plans means and how it works." \
+claude -p "I have a plan at docs/superharness/plans/auth-system.md. Tell me about my options for executing it, including what parallel-execution means and how it works." \
     --model haiku \
     --plugin-dir "$PLUGIN_DIR" \
     --dangerously-skip-permissions \
@@ -46,9 +46,9 @@ claude -p "I have a plan at docs/superharness/plans/auth-system.md. Tell me abou
 echo "Done."
 
 # Turn 2: THE CRITICAL TEST - now that Claude has explained it
-echo ">>> Turn 2: Request parallel-executing-plans..."
+echo ">>> Turn 2: Request parallel-execution..."
 FINAL_LOG="$OUTPUT_DIR/turn2.json"
-claude -p "parallel-executing-plans, please" \
+claude -p "parallel-execution, please" \
     --continue \
     --model haiku \
     --plugin-dir "$PLUGIN_DIR" \
@@ -69,7 +69,7 @@ echo "---"
 echo ""
 
 # Check final turn
-SKILL_PATTERN='"skill":"([^"]*:)?parallel-executing-plans"'
+SKILL_PATTERN='"skill":"([^"]*:)?parallel-execution"'
 if grep -q '"name":"Skill"' "$FINAL_LOG" && grep -qE "$SKILL_PATTERN" "$FINAL_LOG"; then
     echo "PASS: Skill was triggered after Claude described it"
     TRIGGERED=true

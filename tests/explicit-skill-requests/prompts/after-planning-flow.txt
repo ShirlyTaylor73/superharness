@@ -14,5 +14,5 @@ Which approach do you want?
 
 ---
 
-parallel-executing-plans, please
+parallel-execution, please
 

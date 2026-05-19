@@ -1,6 +1,6 @@
 # Go Fractals CLI - Implementation Plan
 
-Execute this plan using the `superharness:parallel-executing-plans` skill.
+Execute this plan using the `superharness:parallel-execution` skill.
 
 ## Context
 

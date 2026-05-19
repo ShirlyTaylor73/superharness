@@ -42,5 +42,5 @@ git commit -m "Initial project setup with design and plan"
 echo "Scaffolded Go Fractals project at: $TARGET_DIR"
 echo ""
 echo "To run the test:"
-echo "  claude -p \"Execute this plan using superharness:parallel-executing-plans. Plan: $TARGET_DIR/plan.md\" --plugin-dir /path/to/superharness"
+echo "  claude -p \"Execute this plan using superharness:parallel-execution. Plan: $TARGET_DIR/plan.md\" --plugin-dir /path/to/superharness"
 

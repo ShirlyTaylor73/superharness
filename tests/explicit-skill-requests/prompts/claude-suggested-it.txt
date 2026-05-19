@@ -8,5 +8,5 @@ Two execution options:
 Which approach do you want to use for implementation?
 
 [Your response]:
-parallel-executing-plans, please
+parallel-execution, please
 

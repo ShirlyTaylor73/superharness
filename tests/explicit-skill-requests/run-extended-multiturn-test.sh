@@ -65,9 +65,9 @@ claude -p "The plan looks good. What are my options for executing it?" \
 echo "Done."
 
 # Turn 5: THE CRITICAL TEST
-echo ">>> Turn 5: Requesting parallel-executing-plans..."
+echo ">>> Turn 5: Requesting parallel-execution..."
 FINAL_LOG="$OUTPUT_DIR/turn5.json"
-claude -p "parallel-executing-plans, please" \
+claude -p "parallel-execution, please" \
     --continue \
     --plugin-dir "$PLUGIN_DIR" \
     --dangerously-skip-permissions \
@@ -80,7 +80,7 @@ echo ""
 echo "=== Results ==="
 
 # Check final turn
-SKILL_PATTERN='"skill":"([^"]*:)?parallel-executing-plans"'
+SKILL_PATTERN='"skill":"([^"]*:)?parallel-execution"'
 if grep -q '"name":"Skill"' "$FINAL_LOG" && grep -qE "$SKILL_PATTERN" "$FINAL_LOG"; then
     echo "PASS: Skill was triggered"
     TRIGGERED=true
