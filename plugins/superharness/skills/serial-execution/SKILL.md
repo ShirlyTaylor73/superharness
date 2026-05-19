@@ -9,18 +9,18 @@ description: 当你有一份书面实现计划需要执行，并且计划较小�
 
 加载计划，批判性审查，执行所有任务，完成后报告。
 
-**开始时宣布：** "我正在使用 serial-executing-plans 技能来实现此计划。"
+**开始时宣布：** "我正在使用 serial-execution 技能来实现此计划。"
 
-**注意：** 当平台不支持子代理，或计划较小、任务强耦合、不值得 wave 化调度时，使用此技能串行执行。如果平台支持子代理且计划较大、任务能安全分 wave 并行，优先使用 `superharness:parallel-executing-plans`。
+**注意：** 当平台不支持子代理，或计划较小、任务强耦合、不值得 wave 化调度时，使用此技能串行执行。如果平台支持子代理且计划较大、任务能安全分 wave 并行，优先使用 `superharness:parallel-execution`。
 
 ## 流程
 
 ### 步骤 1：加载并审查计划
 
-> **注意：** plan 包含两层 `parallel-executing-plans` 专用元数据，**本 skill 全部忽略**：
+> **注意：** plan 包含两层 `parallel-execution` 专用元数据，**本 skill 全部忽略**：
 >
 > 1. **任务头部 5 行 metadata**（`**依赖：**` / `**文件集：**` / `**导出/变更接口：**` / `**消费接口：**` / `**复杂度：**`）：仅供阅读、帮助你理解为什么任务这样排序，**不影响执行**——按任务编号串行执行即可，不要尝试根据它们重排或并发。
-> 2. **`## 并行执行图` 章节**：wave 划分图，仅 parallel-executing-plans 解析使用，serial-executing-plans 直接跳过。
+> 2. **`## 并行执行图` 章节**：wave 划分图，仅 parallel-execution 解析使用，serial-execution 直接跳过。
 >
 > plan 已保证拓扑序（任务 N 的依赖 ⊆ {任务 1..N-1}），按编号串行执行就是安全的。
 
@@ -116,8 +116,8 @@ $ git commit -m "feat: 添加用户输入验证（任务 2/5）"
 ### 步骤 4：完成开发
 
 所有任务完成并验证后：
-- 宣布："我正在使用 finishing-a-development-branch 技能来完成此工作。"
-- **必需子技能：** 使用 superharness:finishing-a-development-branch
+- 宣布："我正在使用 finishing 技能来完成此工作。"
+- **必需子技能：** 使用 superharness:finishing
 - 按照该技能的指引验证测试、展示选项、执行选择
 
 **完成报告模板：**
@@ -144,7 +144,7 @@ $ git commit -m "feat: 添加用户输入验证（任务 2/5）"
 - 任务 3：Redis 配置从 env 改为 config.yaml（经伙伴同意）
 
 ### 下一步
-按 finishing-a-development-branch 技能处理合并/PR
+按 finishing 技能处理合并/PR
 ```
 
 ## 何时停下来求助
@@ -178,6 +178,6 @@ $ git commit -m "feat: 添加用户输入验证（任务 2/5）"
 
 **必需的工作流技能：**
 - **using-git-worktrees** - 必需：开始前建立隔离的工作空间
-- **superharness:writing-plans** - 创建此技能要执行的计划
-- **superharness:finishing-a-development-branch** - 所有任务完成后收尾开发
+- **superharness:planning** - 创建此技能要执行的计划
+- **superharness:finishing** - 所有任务完成后收尾开发
 

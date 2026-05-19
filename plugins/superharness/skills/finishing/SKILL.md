@@ -11,7 +11,7 @@ description: 当实现完成、所有测试通过、需要决定如何集成工�
 
 **核心原则：** 验证测试 → 展示选项 → 执行选择 → 清理。
 
-**开始时宣布：** "我正在使用 finishing-a-development-branch 技能来完成这项工作。"
+**开始时宣布：** "我正在使用 finishing 技能来完成这项工作。"
 
 ## 流程
 
@@ -193,8 +193,8 @@ git worktree remove <worktree-path>
 ## 集成
 
 **被以下技能调用：**
-- **parallel-executing-plans**（步骤 7）- 所有任务完成后
-- **serial-executing-plans**（步骤 5）- 所有批次完成后
+- **parallel-execution**（步骤 7）- 所有任务完成后
+- **serial-execution**（步骤 5）- 所有批次完成后
 
 **配合使用：**
 - **using-git-worktrees** - 清理由该技能创建的工作树

@@ -18,20 +18,20 @@ digraph when_to_use {
     "有实现计划?" [shape=diamond];
     "平台支持子代理?" [shape=diamond];
     "计划较大且任务可并行?" [shape=diamond];
-    "parallel-executing-plans" [shape=box];
-    "serial-executing-plans" [shape=box];
+    "parallel-execution" [shape=box];
+    "serial-execution" [shape=box];
     "手动执行或先头脑风暴" [shape=box];
 
     "有实现计划?" -> "平台支持子代理?" [label="是"];
     "有实现计划?" -> "手动执行或先头脑风暴" [label="否"];
     "平台支持子代理?" -> "计划较大且任务可并行?" [label="是"];
-    "平台支持子代理?" -> "serial-executing-plans" [label="否"];
-    "计划较大且任务可并行?" -> "parallel-executing-plans" [label="是"];
-    "计划较大且任务可并行?" -> "serial-executing-plans" [label="否 - 小计划或紧密耦合"];
+    "平台支持子代理?" -> "serial-execution" [label="否"];
+    "计划较大且任务可并行?" -> "parallel-execution" [label="是"];
+    "计划较大且任务可并行?" -> "serial-execution" [label="否 - 小计划或紧密耦合"];
 }
 ```
 
-**与 serial-executing-plans 的选择边界：**
+**与 serial-execution 的选择边界：**
 - 平台必须支持子代理派发（如 Claude Code、Codex multi-agent 等）
 - 适合较大计划，且任务能按 `## 并行执行图` 划成安全 wave
 - 每个任务全新子智能体（无上下文污染）
@@ -39,7 +39,7 @@ digraph when_to_use {
 - 每个任务后规格合规审查（task-local，可并发）
 - 全 plan 完成后启动 **Wave FINAL**：4 个 reviewer 并发（F1 规格合规 / F2 代码质量 / F3 真实手测 / F4 范围保真）
 - 更快的迭代（任务间无需人工介入；wave 收口需用户显式 ok 才进收尾）
-- 如果平台不支持子代理、计划很小、或任务强耦合到不值得 wave 调度，使用 `serial-executing-plans`
+- 如果平台不支持子代理、计划很小、或任务强耦合到不值得 wave 调度，使用 `serial-execution`
 
 ## 流程
 
@@ -65,7 +65,7 @@ digraph wave_flow {
     "F1-F4 全 APPROVE?" [shape=diamond];
     "并发起 final 修复回路" [shape=box];
     "用户显式 ok?" [shape=diamond];
-    "进入 finishing-a-development-branch" [shape=box, style=filled, fillcolor=lightgreen];
+    "进入 finishing" [shape=box, style=filled, fillcolor=lightgreen];
     "plan 失败终止" [shape=box, style=filled, fillcolor=salmon];
 
     "读 plan, 解析 wave 章节" -> "无 wave 章节?";
@@ -91,7 +91,7 @@ digraph wave_flow {
     "F1-F4 全 APPROVE?" -> "并发起 final 修复回路" [label="否"];
     "并发起 final 修复回路" -> "Wave FINAL: 并发派发 F1/F2/F3/F4";
     "F1-F4 全 APPROVE?" -> "用户显式 ok?" [label="是"];
-    "用户显式 ok?" -> "进入 finishing-a-development-branch" [label="是"];
+    "用户显式 ok?" -> "进入 finishing" [label="是"];
     "用户显式 ok?" -> "并发起 final 修复回路" [label="否, 提建议"];
 
     "通过用户输入接口三选一" -> "并发起修复回路 (失败者)" [label="选项 1/2: 重派"];
@@ -173,13 +173,13 @@ digraph wave_flow {
 
 ### 3 次逃生口与 plan 失败处理
 
-**设计原则：plan 是 AI 一次性烧掉的草稿，不是有状态的工程系统。** 中途任务死活搞不定时**不**维护 SKIP/BLOCKED 状态、**不**持久化 wave 进度、**不**做下游连锁追踪——直接判定 plan 失败，回头重新 brainstorm + writing-plans 写新 plan。
+**设计原则：plan 是 AI 一次性烧掉的草稿，不是有状态的工程系统。** 中途任务死活搞不定时**不**维护 SKIP/BLOCKED 状态、**不**持久化 wave 进度、**不**做下游连锁追踪——直接判定 plan 失败，回头重新 brainstorm + planning 写新 plan。
 
 **3 次逃生口：** 同一任务的修复回路 ≤ 3 次。第 4 次仍未通过 → controller 通过用户输入接口向用户报告卡点，让用户**三选一**：
 
 1. **提供更多上下文** → controller 重派修复（计数器重置，再 3 次窗口）
 2. **用更强模型重派** → 同上，但换模型
-3. **放弃 plan** → 整个 plan 标记为失败，建议回到 brainstorm + writing-plans 重新规划；当前会话退出 subagent-driven 流程
+3. **放弃 plan** → 整个 plan 标记为失败，建议回到 brainstorm + planning 重新规划；当前会话退出 subagent-driven 流程
 
 **没有"跳过任务继续跑"选项**——一旦失败就是 plan 失败。
 
@@ -244,7 +244,7 @@ implementer 与修复者**绝不**自行 commit。commit 在 wave 收口由 cont
 2. **每个 reviewer 给 `VERDICT: APPROVE` 或 `VERDICT: REJECT + 问题清单`**
 3. **任一 REJECT** → 派发修复 subagent 修复对应问题 → 仅重跑该 reject 的 reviewer（不要重跑全部 4 个）
 4. **全员 APPROVE** → 向用户呈现 4 个 reviewer 的输出摘要 → **等待用户显式 ok**（绝不自动收尾）
-5. **用户 ok 后** → 进入 `superharness:finishing-a-development-branch`
+5. **用户 ok 后** → 进入 `superharness:finishing`
 
 **关键不变量：**
 - 4 个 reviewer 的关注点互不重叠（F1 规格 / F2 质量 / F3 行为 / F4 范围），各自独立判定
@@ -314,7 +314,7 @@ F4 范围保真：❌ REJECT — 任务 3 commit 含 1 处不在 What to do 内�
 [呈现 4 reviewer 输出摘要给用户，等用户显式 ok]
 你：ok
 
-[进入 superharness:finishing-a-development-branch]
+[进入 superharness:finishing]
 
 完成！
 ```
@@ -334,7 +334,7 @@ F4 范围保真：❌ REJECT — 任务 3 commit 含 1 处不在 What to do 内�
 - 让实现者的自审替代正式审查（两者都需要）
 - 在 wave 内任一任务 spec 未通过时就进入下一 wave（必须等齐 + commit 完毕）
 - 在 Wave FINAL 任一 reviewer REJECT 时就进入用户 ok 闸门（必须先修复 + 重跑该 reviewer）
-- 用户未显式 ok 就进入 finishing-a-development-branch（绝不自动收尾）
+- 用户未显式 ok 就进入 finishing（绝不自动收尾）
 
 **如果子智能体提问：**
 - 清晰完整地回答
@@ -355,14 +355,14 @@ F4 范围保真：❌ REJECT — 任务 3 commit 含 1 处不在 What to do 内�
 
 **必需的工作流技能：**
 - **using-git-worktrees** - 必需：在开始前建立隔离工作区
-- **superharness:writing-plans** - 创建本技能执行的计划
+- **superharness:planning** - 创建本技能执行的计划
 - **superharness:requesting-code-review** - 审查子智能体的代码审查模板
-- **superharness:finishing-a-development-branch** - 所有任务完成后收尾
+- **superharness:finishing** - 所有任务完成后收尾
 
 **子智能体应使用：**
 - **superharness:test-driven-development** - 子智能体对每个任务遵循 TDD
 
 **替代工作流：**
-- **superharness:serial-executing-plans** - 用于计划较小、任务强耦合或平台不支持子代理时的串行执行
+- **superharness:serial-execution** - 用于计划较小、任务强耦合或平台不支持子代理时的串行执行
 
 

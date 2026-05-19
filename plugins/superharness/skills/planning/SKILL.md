@@ -11,7 +11,7 @@ description: 当你有规格说明或需求用于多步骤任务，或在发现�
 
 假设他们是有经验的开发者，但对我们的工具链和问题领域几乎一无所知。假设他们不太擅长测试设计。
 
-**开始时宣布：** "我正在使用 writing-plans 技能创建实现计划。"
+**开始时宣布：** "我正在使用 planning 技能创建实现计划。"
 
 **上下文：** 此技能应在专用 worktree 中运行（由 brainstorming 技能创建）。
 
@@ -77,7 +77,7 @@ description: 当你有规格说明或需求用于多步骤任务，或在发现�
 ```markdown
 # [功能名称] 实现计划
 
-> **面向 AI 代理的工作者：** 必需子技能：平台支持子代理且计划较大/可安全分 wave 时使用 superharness:parallel-executing-plans；计划较小、任务强耦合或平台不支持子代理时使用 superharness:serial-executing-plans。步骤使用复选框（`- [ ]`）语法来跟踪进度。
+> **面向 AI 代理的工作者：** 必需子技能：平台支持子代理且计划较大/可安全分 wave 时使用 superharness:parallel-execution；计划较小、任务强耦合或平台不支持子代理时使用 superharness:serial-execution。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
 **目标：** [一句话描述要构建什么]
 
@@ -110,7 +110,7 @@ description: 当你有规格说明或需求用于多步骤任务，或在发现�
 - **Markdown 反引号包裹（可选美化）：** 路径与符号值**允许**用反引号 `` ` `` 包裹用于 Markdown 渲染美化，例如 `` `src/users.ts` `` 或 `` `users.ts::createUser` ``。**parser 必须先剥离反引号再做语义解析**。本规范的"分隔符 / 空列表 / 任务编号 / 路径 / 符号"语义是剥离反引号后的内容
 - **复杂度：** 严格三选一字符串：`quick`（单文件机械改动）、`standard`（多文件协调）、`deep`（架构判断）。可选用反引号包裹，禁止其它值
 
-**为什么必填且需严格语法：** 这 5 行是 `parallel-executing-plans` 构建并发安全 wave 调度图的**唯一信源**，需要 LLM 机械化 parse。任何变体形式都可能让契约扫描漏判冲突。`serial-executing-plans` 不消费它们但也不受影响（线性执行依然正确）。
+**为什么必填且需严格语法：** 这 5 行是 `parallel-execution` 构建并发安全 wave 调度图的**唯一信源**，需要 LLM 机械化 parse。任何变体形式都可能让契约扫描漏判冲突。`serial-execution` 不消费它们但也不受影响（线性执行依然正确）。
 
 下面的示例展示最小必要片段。真实 plan 不应粘贴整文件，除非整文件很短且完整内容确实是执行所需。
 
@@ -206,7 +206,7 @@ git commit -m "feat: add specific feature"
 
 **关键：`A.消费 ∩ B.消费 ≠ ∅` 完全允许** —— 两任务同读一个上游接口（例如多个 wave-final reviewer 同时消费 `wave-final-protocol`）不构成冲突。**绝不**把"符号空间互不相交"当作单一规则——必须按上面 4 条精确判断。
 
-**5.3 文件集越界声明：** 每任务 `**文件集：**` 是 implementer 的硬约束，越界改动在 wave 收口 commit 前被 `git diff --name-only` 检出 → plan 失败，通过用户输入接口让用户在"重派修复 / 换模型 / 放弃 plan"中三选一（详见 parallel-executing-plans SKILL.md "Commit 时机与文件集越界校验"段）。
+**5.3 文件集越界声明：** 每任务 `**文件集：**` 是 implementer 的硬约束，越界改动在 wave 收口 commit 前被 `git diff --name-only` 检出 → plan 失败，通过用户输入接口让用户在"重派修复 / 换模型 / 放弃 plan"中三选一（详见 parallel-execution SKILL.md "Commit 时机与文件集越界校验"段）。
 
 **6. 拓扑序检查：** 任务编号顺序是否合法拓扑序？任务 N 的 `**依赖：**` 是否全部 ⊆ {任务 1..N-1}？若否，重排任务编号。
 
@@ -216,12 +216,12 @@ git commit -m "feat: add specific feature"
 
 ## 并行执行图渲染（必填章节）
 
-plan 文末必须有以下结构的章节，由你（writing-plans skill）根据每个任务的 `**依赖：**` 字段机械计算：
+plan 文末必须有以下结构的章节，由你（planning skill）根据每个任务的 `**依赖：**` 字段机械计算：
 
 ```markdown
 ## 并行执行图
 
-> 仅 `parallel-executing-plans` 使用；`serial-executing-plans` 忽略本节。
+> 仅 `parallel-execution` 使用；`serial-execution` 忽略本节。
 
 **Critical Path:** 任务 1 → 任务 5 → 任务 8 → 任务 12
 
@@ -248,17 +248,17 @@ plan 文末必须有以下结构的章节，由你（writing-plans skill）根�
 
 **1. 子代理驱动（适合较大计划）** - 平台支持子代理时，多 wave 执行，wave 内并行多任务，通过并行子代理完成每个任务执行和任务间审查，快速迭代
 
-**2. 串行执行（适合小计划或无子代理平台）** - 使用 serial-executing-plans 按任务编号执行，串行推进并设有检查点
+**2. 串行执行（适合小计划或无子代理平台）** - 使用 serial-execution 按任务编号执行，串行推进并设有检查点
 
 **选哪种方式？"**
 
 **如果选择子代理驱动：**
-- **必需子技能：** 使用 superharness:parallel-executing-plans
+- **必需子技能：** 使用 superharness:parallel-execution
 - 适用于计划较大且任务可安全分 wave 的场景
 - wave 内并行子代理 + task-local 审查 + Wave FINAL 审查
 
 **如果选择串行执行：**
-- **必需子技能：** 使用 superharness:serial-executing-plans
+- **必需子技能：** 使用 superharness:serial-execution
 - 适用于计划较小、任务强耦合或平台不支持子代理的场景
 - 串行执行并设有检查点供审查
 
