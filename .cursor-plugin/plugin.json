@@ -2,7 +2,7 @@
   "name": "superharness",
   "displayName": "Superharness",
   "description": "Programmatic workflow harness for AI coding agents: state-machine driven skills, hooks, and MCP state management.",
-  "version": "1.1.9",
+  "version": "1.2.1",
   "author": {
     "name": "ShirlyTaylor73",
     "url": "https://github.com/ShirlyTaylor73"
