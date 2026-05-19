@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./hooks/run-hook.cmd workflow-context",
+            "command": "\"${PLUGIN_ROOT}/hooks/run-hook.cmd\" workflow-context",
             "async": false
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./hooks/run-hook.cmd workflow-pre-tool-use",
+            "command": "\"${PLUGIN_ROOT}/hooks/run-hook.cmd\" workflow-pre-tool-use",
             "async": false
           }
         ]
