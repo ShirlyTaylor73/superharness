@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   loadWorkflowConfig,
   validateWorkflowConfig,
@@ -173,5 +174,33 @@ describe('loadWorkflowConfig', () => {
 
     const loaded = loadWorkflowConfig({ pluginRoot, workspaceRoot });
     expect(loaded.entryState).toBe('done');
+  });
+});
+
+describe('YAML Consistency', () => {
+  it('real default-workflow.yaml matches validConfig() fixture', () => {
+    // import.meta.url 指向当前 test 文件，从这里推导 pluginRoot
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    // here = .../workflow-state-server/test
+    // pluginRoot = .../plugins/superharness
+    const pluginRoot = path.resolve(here, '..', '..');
+
+    const yamlConfig = loadWorkflowConfig({ pluginRoot });
+    const fixtureGraph = buildWorkflowGraph(validConfig(), { installedSkills });
+    const yamlGraph = buildWorkflowGraph(yamlConfig, { installedSkills });
+
+    expect(yamlGraph.version).toBe(fixtureGraph.version);
+    expect(yamlGraph.entryState).toBe(fixtureGraph.entryState);
+    expect([...yamlGraph.terminalStates].sort())
+      .toEqual([...fixtureGraph.terminalStates].sort());
+    expect(yamlGraph.states.size).toBe(fixtureGraph.states.size);
+    for (const [name, ys] of yamlGraph.states) {
+      const fs = fixtureGraph.states.get(name);
+      expect(fs, `fixture missing state ${name}`).toBeDefined();
+      expect(ys.type, `${name}.type mismatch`).toBe(fs.type);
+      expect(ys.skill, `${name}.skill mismatch`).toBe(fs.skill);
+      expect(ys.next, `${name}.next mismatch`).toEqual(fs.next);
+      expect(ys.terminal, `${name}.terminal mismatch`).toBe(fs.terminal);
+    }
   });
 });
