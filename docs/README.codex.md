@@ -59,5 +59,14 @@ Codex 启动时发现 active skills；插件市场安装还会启用：
 
 历史文本入口已归档禁用，运行时入口由 workflow context 和 `superharness-workflow-state` 接管。
 
+## 旧版 Codex 启用 hooks
 
+Codex 在 2026-05-13 之后才把 plugin hooks 默认开（commit `14473c216f`）。如果你的 codex-cli 早于这个时间（例如 `0.130.0`），`/plugins` 选中本插件会显示 "No plugin hooks"。手动开启：
 
+```toml
+# ~/.codex/config.toml
+[features]
+plugin_hooks = true
+```
+
+加完重启 Codex。新版 Codex（包含 `14473c216f` 之后版本）无需此配置。
