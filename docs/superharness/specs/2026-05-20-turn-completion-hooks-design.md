@@ -51,7 +51,7 @@ R 方案参考 [references/red-queen/src/core/worker.ts:84](../../../references/
 | Hook | 触发时机 | 职责 |
 |---|---|---|
 | **UserPromptSubmit** | 用户消息进入时 | (1) 生成新 `turn_id` 并落 `workflow_turn` 表；(2) 注入 `<SUPERHARNESS_WORKFLOW_STATE>`（现有行为）；(3) 对 `silent_stop_allowed=false` 的 state，追加"本轮须 transition" 提示 |
-| **PostToolUse** | `transition_state` 工具成功后 | 查"刚切走的那个 state"的 `inline_transition_to_next`（state 名从 `tool_input.from_state` 取）；若 true 则通过 `hookSpecificOutput.additionalContext` 把**目标 state 的 SKILL.md** 注入到 agent 后续 reasoning |
+| **PostToolUse** | `transition_state` 工具成功后 | 无条件通过 `hookSpecificOutput.additionalContext` 把**目标 state 的 SKILL.md** 注入到 agent 后续 reasoning（目标 state 名从 `tool_input.to_state` 取） |
 | **Stop** | agent 本轮 inference 结束 | 按 5 步算法决策（详见 3.3.4）：本轮已切态 / 用户授权 escape / silent_stop_allowed=true 任一 → 放行；否则 block_count++ 拦截 + 注入三选项 reason；block_count≥3 → 兜底逃生放行 |
 
 #### 时序图（strict state 典型轮）
@@ -65,12 +65,10 @@ R 方案参考 [references/red-queen/src/core/worker.ts:84](../../../references/
 agent 干活：调 Write/Edit/Bash/transition_state 等工具
               │
               ├─ 调 transition_state → ──→ PostToolUse hook
-              │                                ├─ 取"刚切走的 state"（从 tool_input.from_state）
-              │                                ├─ 该 state 的 inline_transition_to_next=true？
-              │                                │   ├─ 是 → additionalContext 注入 to_state 的 SKILL.md
-              │                                │   └─ 否 → 输出 {}（agent 本轮自然停下）
+              │                                ├─ 取 to_state（从 tool_input.to_state）
+              │                                └─ additionalContext 注入 to_state 的 SKILL.md
               │
-              └─ 继续 reasoning（可能再 transition_state，链式 chain）
+              └─ 继续 reasoning（用新态 SKILL 立刻干下一态的事，可链式 chain）
 
 agent 输出完毕 ──→ Stop hook
                     ├─ SELECT turn_id, block_count, stop_block_released FROM workflow_turn
@@ -95,29 +93,28 @@ agent 输出完毕 ──→ Stop hook
 
 #### 3.2.1 YAML schema 改造（`plugins/superharness/workflow/default-workflow.yaml`）
 
-每 state 节点加两个 bool 字段。`validate-workflow.js` 的 `buildWorkflowGraph()` 读取并挂在 state 节点对象上。
+每 state 节点加 **1 个** bool 字段：`silent_stop_allowed`。`validate-workflow.js` 的 `buildWorkflowGraph()` 读取并挂在 state 节点对象上。
 
 完整 flag 表：
 
-| State | `inline_transition_to_next` | `silent_stop_allowed` | 理由 |
-|---|---|---|---|
-| `intake` | true | true | 决定走向不需要再确认；answer-only 模式合法 |
-| `exploration` | true | true | 调研可跨多轮；切走时无产出物需审 |
-| `trivial` | true | false | 改完切回 intake 立刻接下个任务；强制每轮闭环 |
-| `brainstorming` | **false** | true | 多轮决策树盘问合法；spec 写完需用户审查再进 planning |
-| `planning` | **false** | true | 多轮写 plan 合法；plan 写完需用户审查再进 execution |
-| `serial_execution` | true | false | 干完切 verification 立刻验；中途不许停 |
-| `parallel_execution` | true | false | 同 serial |
-| `systematic_debugging` | true | true | 调试反复跨轮合法 |
-| `verification` | **false** | false | gate 必须本轮明确 pass/fail；验完需用户审查再进 finishing |
-| `finishing` | true | false | finishing 内部已有 commit 用户确认机制；结束后回 intake |
+| State | `silent_stop_allowed` | 理由 |
+|---|---|---|
+| `intake` | true | answer-only 模式合法 / 多轮等用户回复合法 |
+| `exploration` | true | 调研可跨多轮 |
+| `trivial` | false | 改完必须本轮切回 intake，强制每轮闭环 |
+| `brainstorming` | true | 多轮决策树盘问 + 产出 spec 后输出"请审"等用户回复都合法 |
+| `planning` | true | 多轮写 plan + 产出 plan 后输出"请审"等用户回复都合法 |
+| `serial_execution` | false | 干完必须切 verification 立刻验，中途不许停 |
+| `parallel_execution` | false | 同 serial |
+| `systematic_debugging` | true | 调试反复跨轮合法 |
+| `verification` | true | 验证结果输出后 agent 输出"请审 pass/fail"等用户确认；多轮等用户回复合法（与 brainstorming/planning 同模式） |
+| `finishing` | false | finishing 内部已有 commit 用户确认机制，必须本轮完成 |
 
-**两个 flag 都是 state 自身的属性**，描述 agent "在这个 state 时"的行为约束。区别只在被哪个 hook 读：
+**`silent_stop_allowed` 的语义**：**本 state 内 agent 本轮结束但未切态时，Stop hook 是否容忍**（true=放行；false=拦截）。这个 flag 由 Stop hook 读——查 agent 当前所在 state 的此字段。
 
-- `inline_transition_to_next`：**本 state 切到下一态时，是否允许在同一轮内继续干下一态的工作**（true=允许 chain；false=切完本轮停下让用户介入）。PostToolUse hook 读这个——查刚切走的那个 state 的此字段。
-- `silent_stop_allowed`：**本 state 内 agent 本轮结束但未切态时，是否容忍**（true=放行；false=拦截）。Stop hook 读这个——查 agent 当前所在 state 的此字段。
+**关键设计决策**：**没有 `inline_transition_to_next` flag**——PostToolUse hook 在 `transition_state` 工具成功后**无条件**注入 `to_state` 的 SKILL.md。原因：当 agent 调 `transition_state` 时，**用户介入的 gate 已经在本 state 内部经历过了**（例如 brainstorming 的"用户审查规格"关卡发生在 spec 写完那轮和用户回复"批准"之间——本质是 state 内的多轮停留，由 silent_stop_allowed=true 保护）。一旦 agent 切态，意味着 state 内的所有 gate 都已通过，立刻 chain 到下一态干活是正确行为。
 
-**YAML 缺省值（向后兼容）**：缺省两个字段都视为 `false`（保守默认）。新增 vitest 测试要求 10 个内置 state 全部显式声明，缺省值只为外部 YAML 容错。
+**YAML 缺省值（向后兼容）**：缺省 `silent_stop_allowed` 视为 `false`（保守默认）。新增 vitest 测试要求 10 个内置 state 全部显式声明，缺省值只为外部 YAML 容错。
 
 #### 3.2.2 SQLite schema 改造（`plugins/superharness/workflow-state-server/schema.sql`）
 
@@ -216,7 +213,7 @@ ALTER 在 schema.sql 里 hardcode 跑会让第二次启动时报 "duplicate colu
 | **PostToolUse** | `{cwd, tool_input:{from_state, to_state, ...}, tool_response, ...}` | `{hookSpecificOutput:{hookEventName:"PostToolUse", additionalContext}}` 或 `{}` |
 | **Stop** | `{cwd, ...}` | 放行：`{}`；拦截：`{decision:"block", reason:"<文案>"}` |
 
-**关键点**：PostToolUse 要查的是**"刚切走的那个 state"**——即 transition 发生时 agent 待在的 state。在 hook 看到的 stdin JSON 里，这个 state 名叫 `tool_input.from_state`（`transition_state` 工具的输入参数字段名）。**不能**用 `getWorkflowState()` 查"当前 state"——因为工具已经执行成功、状态已经更新为 `to_state` 了。
+**关键点**：PostToolUse 直接读 `tool_input.to_state`（`transition_state` 工具的输入参数字段名）拿到目标 state 名，然后渲染该 state 的 SKILL.md 注入。**没有任何条件分支**——切了就注入，简单直接。（注：不能用 `getWorkflowState()` 查"当前 state"获取 to_state 然后看 from——虽然此时 state 已更新为 to_state，但语义上更清晰是从 `tool_input` 读 agent 显式指定的目标。）
 
 #### 3.3.4 Stop hook 算法与拦截 reason 文案
 
@@ -301,18 +298,20 @@ release_stop_block(workspaceRoot: string, reason: string) → { ok: true }
 #### 3.4.3 关键边界场景
 
 **A. 单轮内多次 chain**（intake → trivial → intake）
-- intake.inline=true → PostToolUse 注入 trivial SKILL
+- PostToolUse 注入 trivial SKILL
 - agent 干完 → transition 回 intake → PostToolUse 注入 intake SKILL
 - transition_log 本轮 2 条记录，同 turn_id
 - Stop 查到 ≥1 条 → 放行 ✓
 
-**B. chain 到非 inline 的 state**（intake → brainstorming）
-- intake.inline=true → PostToolUse 注入 brainstorming SKILL
-- agent 多轮做盘问，每轮 silent=true 放行
-- 完成 → transition 到 planning → PostToolUse 看 brainstorming.inline=**false** → **不注入**
-- agent 自然在本轮输出"spec 已写到 .md，请审"
-- Stop：本轮 1 条 transition → 放行 ✓
-- 下一轮用户回复"已审"→ UserPromptSubmit 注入 planning SKILL
+**B. 跨多轮等用户审 + 用户批准后立刻 chain**（brainstorming → planning）
+- 轮 N (brainstorming)：agent 做完决策树盘问 → 写 spec → 输出"spec 已写到 `<path>`，请审"
+- Stop 触发：本轮 0 transition，state=brainstorming，silent_stop_allowed=true → 放行 ✓
+- 用户离线审 spec → 满意 → 回复"批准，继续"
+- 轮 N+1 (仍 brainstorming)：UserPromptSubmit 注入 brainstorming SKILL.md → agent 收到"批准" → 调 transition_state(brainstorming→planning)
+- PostToolUse **无脑注入** planning SKILL → agent 本轮**立刻**按 planning skill 开始写 plan
+- Stop 触发：本轮 1 条 transition → 放行 ✓
+- planning / verification 内同样模式：planning 写完 plan → 请审 → 批准 → chain 到 execution；verification 跑完测试输出报告 → 请审 pass/fail → 批准 → chain 到 finishing 做 commit
+- **核心**：用户审查 gate 发生在 state 内部（输出"请审" + 多轮等回复），不是切态时
 
 **C. silent=false state 内 agent 干一半溜了**
 - agent 在 serial_execution 写代码写一半，没切态就停了
@@ -342,7 +341,7 @@ release_stop_block(workspaceRoot: string, reason: string) → { ok: true }
 |---|---|---|
 | Unit | `workflow-state-server/test/turn.test.js`（新） | turn_id 生成 / workflow_turn CRUD（含 stop_block_released / release_reason）/ block_count 递增 / 旧 turn_id NULL 处理 |
 | Unit | `workflow-state-server/test/release-stop-block.test.js`（新） | `release_stop_block` MCP 工具：参数校验 / DB 写 / audit 行写 |
-| Unit | `workflow-state-server/test/validate-workflow.test.js`（扩） | YAML 新增 2 字段的解析 + 缺省值 + 10 state 取值匹配 |
+| Unit | `workflow-state-server/test/validate-workflow.test.js`（扩） | YAML 新增 `silent_stop_allowed` 字段的解析 + 缺省值 + 10 state 取值匹配 |
 | Integration | `tests/hooks/`（新目录） | 三 hook 脚本输入输出契约：给 stdin JSON 断言 stdout JSON |
 | Integration | `tests/hooks/scenario-{A,B,C,D,E}.test.sh`（5 个新文件） | 3.4.3 五个边界场景的端到端覆盖（含场景 E 的 escape 通道） |
 | Skill-trigger | `tests/skill-triggering/`（现有） | 不动 |
@@ -387,7 +386,7 @@ release_stop_block(workspaceRoot: string, reason: string) → { ok: true }
 - [ ] **Claude Code 实测**：在 `trivial` state 干一半（agent 模拟"我先停一下"）→ 下一轮 Stop hook 拦截 + 拦截 reason 出现在 agent 上下文
 - [ ] **Claude Code 实测**：`intake → trivial → intake` 单轮内 chain 完成两态（PostToolUse 注入 trivial SKILL 后 agent 立即继续干）
 - [ ] **Codex 实测**：同上两条
-- [ ] **brainstorming/planning/verification 实测**：transition 后 PostToolUse 不注入下态 SKILL，agent 自然在本轮停下
+- [ ] **brainstorming/planning/verification 等审实测**：spec/plan/验证结果写完那轮 agent 输出"请审"且不切态 → Stop 放行（silent_stop_allowed=true 保护）；下一轮用户回复"批准"后 agent 切态 → PostToolUse 注入下态 SKILL → agent 本轮立刻按下态开始干活（不再多浪费一轮）
 - [ ] **escape 通道实测**：在 silent=false state 内模拟 agent 收到 block reason → 调 AskUserQuestion → 用户选"终止本轮" → agent 调 `release_stop_block` → 下次 Stop 放行
 - [ ] **escape 留痕**：`release_stop_block` 调用后 `workflow_transition_log` 有 `[escape]` 前缀的 audit 行
 - [ ] `workflow-state-server` vitest 通过率 100%（含新增 `turn.test.js`、`release-stop-block.test.js`）
@@ -403,7 +402,7 @@ release_stop_block(workspaceRoot: string, reason: string) → { ok: true }
 
 - **新增文件**：2 个 hook 脚本（`workflow-post-transition.mjs` / `workflow-stop.mjs`）+ 1 个测试目录（`tests/hooks/`）
 - **修改文件**：
-  - `default-workflow.yaml`（每 state 加 2 字段）
+  - `default-workflow.yaml`（每 state 加 1 字段 `silent_stop_allowed`）
   - `schema.sql`（新表 `workflow_turn` 含 5 字段 + ALTER）
   - `state.js`（schema 升级路径 + workflow_turn CRUD + turn_id 写 transition_log）
   - `validate-workflow.js`（buildWorkflowGraph 解析新字段）
