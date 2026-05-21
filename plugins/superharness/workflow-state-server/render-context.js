@@ -70,7 +70,7 @@ export function renderWorkflowContext({ stateInfo, workflowGraph, skillsDir }) {
 
   if (node.type === 'router') {
     parts.push('', renderRouterGuard(), '</SUPERHARNESS_WORKFLOW_STATE>');
-    return parts.join('\n');
+    return parts.join('\n') + renderStrictAppendix({ silent_stop_allowed: node.silent_stop_allowed });
   }
 
   const skillName = stateInfo.active_skill ?? node.skill;
@@ -81,7 +81,27 @@ export function renderWorkflowContext({ stateInfo, workflowGraph, skillsDir }) {
   }
 
   parts.push('</SUPERHARNESS_WORKFLOW_STATE>');
-  return parts.join('\n');
+  return parts.join('\n') + renderStrictAppendix({ silent_stop_allowed: node.silent_stop_allowed });
+}
+
+export function renderActiveSkill({ stateName, skillsDir }) {
+  const skillPath = resolveSkillPath({ skillsDir, skillName: stateName });
+  const skillContent = stripFrontmatter(fs.readFileSync(skillPath, 'utf8')).trim();
+  return [
+    `[Superharness] 已切到新状态，本轮继续遵循以下 SKILL：`,
+    ``,
+    `--- Active skill: ${stateName} ---`,
+    skillContent,
+  ].join('\n');
+}
+
+export function renderStrictAppendix({ silent_stop_allowed }) {
+  if (silent_stop_allowed) return '';
+  return [
+    '',
+    '⚠ 当前 state 不允许本轮沉默结束——必须在本轮调用 transition_state 切到下一态，',
+    '若本轮工作未完成请继续完成再切；若无法继续请用 AskUserQuestion 让用户决定。',
+  ].join('\n');
 }
 
 export function renderStopWorkContext({ reason }) {
