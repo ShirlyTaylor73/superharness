@@ -22,3 +22,16 @@ CREATE TABLE IF NOT EXISTS workflow_transition_log (
 
 CREATE INDEX IF NOT EXISTS idx_workflow_transition_workspace
   ON workflow_transition_log(workspace_id, id);
+
+CREATE TABLE IF NOT EXISTS workflow_turn (
+  workspace_id TEXT PRIMARY KEY,
+  turn_id TEXT NOT NULL,
+  block_count INTEGER NOT NULL DEFAULT 0,
+  stop_block_released INTEGER NOT NULL DEFAULT 0,
+  release_reason TEXT,
+  created_at INTEGER NOT NULL
+);
+
+-- Note: idx_workflow_transition_turn is created in state.js::ensureTurnIdColumn
+-- because the turn_id column is added via ALTER for backwards compatibility
+-- with pre-v1.3.0 databases.
