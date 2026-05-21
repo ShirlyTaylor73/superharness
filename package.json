@@ -1,17 +1,15 @@
 {
   "name": "superharness",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
   },
   "description": "Programmatic workflow harness for AI coding agents with skills, hooks, MCP state management, and cross-client support.",
   "type": "module",
-  "main": "plugins/superharness/.opencode/plugins/superharness.js",
   "keywords": [
     "superharness",
     "claude-code",
-    "cursor",
     "codex",
     "gemini",
     "kiro",
@@ -21,7 +19,6 @@
     "openclaw",
     "windsurf",
     "aider",
-    "opencode",
     "qwen",
     "vscode",
     "copilot",

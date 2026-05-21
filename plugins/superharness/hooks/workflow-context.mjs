@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -129,7 +130,7 @@ export async function main() {
     const workspaceRoot = path.resolve(input.cwd || process.cwd());
     const [
       { loadWorkflowConfig, buildWorkflowGraph },
-      { openWorkflowStateStore, getWorkflowState, resolveWorkflowDbPath },
+      { openWorkflowStateStore, getWorkflowState, resolveWorkflowDbPath, createTurn },
       { renderWorkflowContext },
     ] = await Promise.all([
       importFrom(workflowStateDir, 'validate-workflow.js'),
@@ -145,6 +146,8 @@ export async function main() {
       dbPath: process.env.SUPERHARNESS_WORKFLOW_STATE_DB
         || resolveWorkflowDbPath({ workspaceRoot }),
     });
+    const turnId = crypto.randomUUID();
+    createTurn(store, { workspaceRoot, turnId });
     const stateInfo = getWorkflowState(store, {
       workspaceRoot,
       workflowGraph,

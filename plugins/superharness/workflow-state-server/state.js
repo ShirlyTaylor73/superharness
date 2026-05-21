@@ -56,6 +56,39 @@ function readSchema() {
   );
 }
 
+export function ensureTurnIdColumn(db) {
+  const columns = db.prepare("PRAGMA table_info(workflow_transition_log)").all();
+  const hasTurnId = columns.some((c) => c.name === 'turn_id');
+  if (!hasTurnId) {
+    db.exec("ALTER TABLE workflow_transition_log ADD COLUMN turn_id TEXT");
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS idx_workflow_transition_turn ON workflow_transition_log(turn_id)");
+}
+
+export function createTurn(store, { workspaceRoot, turnId }) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  store.db.prepare(`
+    INSERT OR REPLACE INTO workflow_turn
+    (workspace_id, turn_id, block_count, stop_block_released, release_reason, created_at)
+    VALUES (?, ?, 0, 0, NULL, ?)
+  `).run(workspaceId, turnId, now());
+}
+
+export function getTurn(store, { workspaceRoot }) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  return store.db.prepare('SELECT * FROM workflow_turn WHERE workspace_id = ?').get(workspaceId) ?? null;
+}
+
+export function incrementBlockCount(store, { workspaceRoot }) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  store.db.prepare('UPDATE workflow_turn SET block_count = block_count + 1 WHERE workspace_id = ?').run(workspaceId);
+}
+
+export function releaseTurnBlock(store, { workspaceRoot, reason }) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  store.db.prepare('UPDATE workflow_turn SET stop_block_released = 1, release_reason = ? WHERE workspace_id = ?').run(reason, workspaceId);
+}
+
 function normalizeRow(row) {
   if (!row) return null;
   return {
@@ -85,11 +118,13 @@ function insertLog(store, {
   source,
   createdAt = now(),
 }) {
+  const turnRow = store.prepare('SELECT turn_id FROM workflow_turn WHERE workspace_id = ?').get(workspaceId);
+  const turnId = turnRow?.turn_id ?? null;
   store.prepare(`
     INSERT INTO workflow_transition_log (
-      workspace_id, from_state, to_state, previous_state, reason, source, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(workspaceId, fromState ?? null, toState, previousState ?? null, reason, source, createdAt);
+      workspace_id, from_state, to_state, previous_state, reason, source, turn_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(workspaceId, fromState ?? null, toState, previousState ?? null, reason, source, turnId, createdAt);
 }
 
 function upsertState(store, {
@@ -206,6 +241,7 @@ export function openWorkflowStateStore({ dbPath, mode } = {}) {
   }
   store.exec('PRAGMA foreign_keys = ON');
   store.exec(readSchema());
+  ensureTurnIdColumn(store);
 
   return store;
 }
@@ -234,7 +270,7 @@ export function initializeWorkflowState(store, {
     toState: graph.entryState,
     previousState: null,
     reason: trimmedReason,
-    source: 'agent-tool',
+    source: 'hook',
   });
   return state;
 }

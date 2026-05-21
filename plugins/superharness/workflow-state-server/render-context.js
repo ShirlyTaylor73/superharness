@@ -70,7 +70,7 @@ export function renderWorkflowContext({ stateInfo, workflowGraph, skillsDir }) {
 
   if (node.type === 'router') {
     parts.push('', renderRouterGuard(), '</SUPERHARNESS_WORKFLOW_STATE>');
-    return parts.join('\n');
+    return parts.join('\n') + renderStrictAppendix({ silent_stop_allowed: node.silent_stop_allowed });
   }
 
   const skillName = stateInfo.active_skill ?? node.skill;
@@ -81,7 +81,31 @@ export function renderWorkflowContext({ stateInfo, workflowGraph, skillsDir }) {
   }
 
   parts.push('</SUPERHARNESS_WORKFLOW_STATE>');
-  return parts.join('\n');
+  return parts.join('\n') + renderStrictAppendix({ silent_stop_allowed: node.silent_stop_allowed });
+}
+
+export function renderActiveSkill({ stateName, skillsDir, skillName }) {
+  // State 名可能是 underscore (serial_execution)，skill 目录是 hyphen (serial-execution)。
+  // 若 caller 显式提供 skillName（来自 graph.states.get(state).skill），用它做目录查找；
+  // 否则回退到 stateName（兼容 1:1 命名的 state，如 intake/trivial/planning）。
+  const lookupName = skillName ?? stateName;
+  const skillPath = resolveSkillPath({ skillsDir, skillName: lookupName });
+  const skillContent = stripFrontmatter(fs.readFileSync(skillPath, 'utf8')).trim();
+  return [
+    `[Superharness] 已切到新状态，本轮继续遵循以下 SKILL：`,
+    ``,
+    `--- Active skill: ${stateName} ---`,
+    skillContent,
+  ].join('\n');
+}
+
+export function renderStrictAppendix({ silent_stop_allowed }) {
+  if (silent_stop_allowed) return '';
+  return [
+    '',
+    '⚠ 当前 state 不允许本轮沉默结束——必须在本轮调用 transition_state 切到下一态，',
+    '若本轮工作未完成请继续完成再切；若无法继续请用 AskUserQuestion 让用户决定。',
+  ].join('\n');
 }
 
 export function renderStopWorkContext({ reason }) {

@@ -2,11 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   renderWorkflowContext,
   renderStopWorkContext,
   stripFrontmatter,
   resolveSkillPath,
+  renderActiveSkill,
+  renderStrictAppendix,
 } from '../render-context.js';
 import { buildWorkflowGraph } from '../validate-workflow.js';
 
@@ -168,5 +171,31 @@ describe('renderStopWorkContext', () => {
     expect(context).toContain('config failed');
     expect(context).toContain('Stop business work');
     expect(context).toContain('Do not edit .superharness/ directly.');
+  });
+});
+
+const skillsDir = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', 'skills');
+
+describe('renderActiveSkill', () => {
+  it('returns SKILL.md body of given state (no SUPERHARNESS_WORKFLOW_STATE wrapper)', () => {
+    const out = renderActiveSkill({ stateName: 'intake', skillsDir });
+    expect(out).toContain('Active skill: intake');
+    expect(out).not.toContain('<SUPERHARNESS_WORKFLOW_STATE>');
+  });
+
+  it('throws on unknown state', () => {
+    expect(() => renderActiveSkill({ stateName: 'nonexistent', skillsDir })).toThrow();
+  });
+});
+
+describe('renderStrictAppendix', () => {
+  it('returns non-empty append text when silent_stop_allowed=false', () => {
+    const out = renderStrictAppendix({ silent_stop_allowed: false });
+    expect(out).toContain('本轮');
+    expect(out).toContain('transition_state');
+  });
+
+  it('returns empty string when silent_stop_allowed=true', () => {
+    expect(renderStrictAppendix({ silent_stop_allowed: true })).toBe('');
   });
 });

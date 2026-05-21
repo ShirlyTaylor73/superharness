@@ -63,6 +63,7 @@ describe('TOOLS', () => {
       'transition_state',
       'list_history',
       'reset_state',
+      'release_stop_block',
     ]);
   });
 

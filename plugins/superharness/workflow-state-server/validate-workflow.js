@@ -145,12 +145,14 @@ export function buildWorkflowGraph(config, { installedSkills } = {}) {
   const states = new Map();
   for (const [name, state] of Object.entries(config.states)) {
     const terminal = terminalSet.has(name) || state.type === 'terminal';
+    const silentStopAllowed = state.silent_stop_allowed === true;
     states.set(name, {
       name,
       type: state.type,
       skill: state.skill ?? null,
       next: terminal ? [] : [...state.next],
       terminal,
+      silent_stop_allowed: silentStopAllowed,
     });
   }
 
