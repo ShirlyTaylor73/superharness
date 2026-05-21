@@ -10,12 +10,14 @@ states:
       - exploration
       - trivial
       - brainstorming
+    silent_stop_allowed: true
 
   exploration:
     type: interactive
     skill: exploration
     next:
       - intake
+    silent_stop_allowed: true
 
   trivial:
     type: execution
@@ -23,12 +25,14 @@ states:
     next:
       - intake
       - systematic_debugging
+    silent_stop_allowed: false
 
   brainstorming:
     type: interactive
     skill: brainstorming
     next:
       - planning
+    silent_stop_allowed: true
 
   planning:
     type: interactive
@@ -36,6 +40,7 @@ states:
     next:
       - serial_execution
       - parallel_execution
+    silent_stop_allowed: true
 
   serial_execution:
     type: execution
@@ -43,6 +48,7 @@ states:
     next:
       - verification
       - systematic_debugging
+    silent_stop_allowed: false
 
   parallel_execution:
     type: execution
@@ -50,6 +56,7 @@ states:
     next:
       - verification
       - systematic_debugging
+    silent_stop_allowed: false
 
   verification:
     type: gate
@@ -57,6 +64,7 @@ states:
     next:
       - finishing
       - systematic_debugging
+    silent_stop_allowed: true
 
   finishing:
     type: gate
@@ -64,6 +72,7 @@ states:
     next:
       - intake
       - systematic_debugging
+    silent_stop_allowed: false
 
   systematic_debugging:
     type: preemptive
@@ -72,3 +81,4 @@ states:
       - previous_state
       - serial_execution
       - planning
+    silent_stop_allowed: true

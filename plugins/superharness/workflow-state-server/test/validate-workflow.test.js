@@ -204,3 +204,35 @@ describe('YAML Consistency', () => {
     }
   });
 });
+
+describe('silent_stop_allowed parsing', () => {
+  it('parses silent_stop_allowed=true on state node', () => {
+    const config = validConfig();
+    config.states.intake.silent_stop_allowed = true;
+    const graph = buildWorkflowGraph(config, { installedSkills });
+    expect(graph.states.get('intake').silent_stop_allowed).toBe(true);
+  });
+
+  it('defaults silent_stop_allowed to false when omitted', () => {
+    const config = validConfig();
+    // intake.silent_stop_allowed omitted on purpose
+    const graph = buildWorkflowGraph(config, { installedSkills });
+    expect(graph.states.get('intake').silent_stop_allowed).toBe(false);
+  });
+
+  it('default workflow has expected silent_stop_allowed values', () => {
+    const pluginRoot = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..');
+    const yamlConfig = loadWorkflowConfig({ pluginRoot });
+    const graph = buildWorkflowGraph(yamlConfig, { installedSkills });
+
+    const expected = {
+      intake: true, exploration: true, trivial: false,
+      brainstorming: true, planning: true,
+      serial_execution: false, parallel_execution: false,
+      systematic_debugging: true, verification: true, finishing: false,
+    };
+    for (const [name, exp] of Object.entries(expected)) {
+      expect(graph.states.get(name).silent_stop_allowed, `${name}.silent_stop_allowed`).toBe(exp);
+    }
+  });
+});
