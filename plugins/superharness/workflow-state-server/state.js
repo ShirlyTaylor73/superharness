@@ -270,7 +270,7 @@ export function initializeWorkflowState(store, {
     toState: graph.entryState,
     previousState: null,
     reason: trimmedReason,
-    source: 'agent-tool',
+    source: 'hook',
   });
   return state;
 }
