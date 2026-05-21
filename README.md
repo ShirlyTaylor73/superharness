@@ -6,9 +6,9 @@ Superharness 是面向 AI 编程代理的程序化工作流运行时。它把“
 
 - **状态机驱动的 active skills**：覆盖会话入口分流（intake）、只读探索、轻量改动、需求澄清、计划编写、串行/并行执行、TDD、系统化调试、代码审查、完成前验证、分支收尾、中文工程规范等开发环节。
 - **程序化状态机**：默认工作流由 `workflow/default-workflow.yaml` 描述，状态切换通过 MCP 工具管理，而不是让 agent 直接改状态文件。
-- **Hook 动态注入**：Claude Code / Codex 通过 `UserPromptSubmit` 注入当前工作流上下文，OpenCode 通过 `experimental.chat.system.transform` 注入 system context。
-- **状态保护**：`PreToolUse` / `tool.execute.before` 阻止直接写入 `.superharness/`，要求通过工作流状态工具完成状态变更。
-- **三端支持**：Claude Code、Codex、OpenCode 都接入同一套 skills、状态机与上下文渲染机制。
+- **Hook 动态注入**：Claude Code / Codex 通过 `UserPromptSubmit` 注入当前工作流上下文。
+- **状态保护**：`PreToolUse` 阻止直接写入 `.superharness/`，要求通过工作流状态工具完成状态变更。
+- **双端支持**：Claude Code、Codex 都接入同一套 skills、状态机与上下文渲染机制。
 
 ## 架构
 
@@ -79,8 +79,7 @@ flowchart TD
 | `plugins/superharness/skills/` | 当前 active skills 目录 |
 | `plugins/superharness/workflow/` | 默认工作流配置 |
 | `plugins/superharness/workflow-state-server/` | 状态机 MCP 与渲染逻辑 |
-| `plugins/superharness/hooks/` | Claude Code / Codex / Cursor hook 配置与入口 |
-| `plugins/superharness/.opencode/` | OpenCode Bun 插件入口 |
+| `plugins/superharness/hooks/` | Claude Code / Codex hook 配置与入口 |
 | `plugins/superharness/archived-skills/` | 已归档、不可发现的历史 skill |
 
 ## 安装
@@ -114,26 +113,6 @@ codex plugin marketplace upgrade superharness
 codex plugin marketplace remove superharness
 ```
 
-### OpenCode
-
-在全局或项目级 `opencode.json` 中添加：
-
-```json
-{
-  "plugin": ["superharness@git+https://github.com/ShirlyTaylor73/superharness.git"]
-}
-```
-
-OpenCode 插件会自动注册 active skills、`superharness-workflow-state` MCP，并在每轮调用前注入当前 workflow context。
-
-锁定版本：
-
-```json
-{
-  "plugin": ["superharness@git+https://github.com/ShirlyTaylor73/superharness.git#v1.1.9"]
-}
-```
-
 ### 本地开发安装
 
 ```bash
@@ -149,8 +128,6 @@ Claude / Codex 推荐使用插件市场安装。若只想手动使用 skills，�
 |---|---|
 | Claude Code | `.claude/skills/` |
 | Codex CLI | `.agents/skills/` |
-| OpenCode | `.opencode/skills/` |
-| Cursor | `.cursor/skills/` |
 | Gemini CLI | `.gemini/skills/` |
 | Aider | `.aider/skills/` |
 | Windsurf | `.windsurf/skills/` |
@@ -192,10 +169,6 @@ Claude / Codex 推荐使用插件市场安装。若只想手动使用 skills，�
 ```bash
 cd plugins/superharness/workflow-state-server
 npm.cmd test
-```
-
-```bash
-D:\Git\bin\bash.exe tests/opencode/run-tests.sh
 ```
 
 ## License

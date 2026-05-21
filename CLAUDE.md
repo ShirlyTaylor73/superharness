@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-Superharness is a **plugin/extension** distributed to multiple AI coding agents (Claude Code, Codex, OpenCode, Cursor, Gemini, etc.). It is *not* an application — it is a runtime that ships into other agents to enforce a programmatic workflow state machine over their normal "skill" behavior. Nothing here is meant to be run standalone except the tests and the MCP server.
+Superharness is a **plugin/extension** distributed to multiple AI coding agents (Claude Code, Codex, Gemini, etc.). It is *not* an application — it is a runtime that ships into other agents to enforce a programmatic workflow state machine over their normal "skill" behavior. Nothing here is meant to be run standalone except the tests and the MCP server.
 
 The repo root is the marketplace; the actual plugin lives at [plugins/superharness/](plugins/superharness/). Most edits happen there.
 
@@ -23,15 +23,6 @@ Run a single Vitest file:
 ```bash
 cd plugins/superharness/workflow-state-server
 npx vitest run test/state.test.js
-```
-
-Run the OpenCode plugin contract tests (bash; requires Git Bash on Windows):
-
-```bash
-"D:\Git\bin\bash.exe" tests/opencode/run-tests.sh           # Windows
-bash tests/opencode/run-tests.sh                            # Unix
-bash tests/opencode/run-tests.sh --integration              # also runs tests that need OpenCode installed
-bash tests/opencode/run-tests.sh --test test-priority.sh    # run one test
 ```
 
 Run the brainstorm-server tests:
@@ -58,15 +49,14 @@ The center of the system is a **YAML-described state machine** in [plugins/super
 
 State per workspace is persisted in `<workspace>/.superharness/workflow-state.db` (SQLite, schema at [plugins/superharness/workflow-state-server/schema.sql](plugins/superharness/workflow-state-server/schema.sql)). The DB has two tables: current state per workspace + an append-only transition log with `reason` and `source` columns for audit.
 
-### Three integration paths, one engine
+### Two integration paths, one engine
 
-The same workflow engine ([plugins/superharness/workflow-state-server/](plugins/superharness/workflow-state-server/)) is consumed three different ways:
+The same workflow engine ([plugins/superharness/workflow-state-server/](plugins/superharness/workflow-state-server/)) is consumed two different ways:
 
 1. **MCP server** ([server.js](plugins/superharness/workflow-state-server/server.js)) — exposes `get_state`, `classify_request`, `transition_state`, `list_history`, `reset_state` as MCP tools. This is how agents read/mutate state.
 2. **Hook scripts** ([plugins/superharness/hooks/](plugins/superharness/hooks/)) — `workflow-context.mjs` runs on `UserPromptSubmit` and prints rendered workflow context into the agent's context window; `workflow-pre-tool-use.mjs` runs on `PreToolUse` and denies any tool call that would write into `.superharness/` directly. Both are invoked by [run-hook.cmd](plugins/superharness/hooks/run-hook.cmd), a polyglot batch/bash wrapper that finds Git Bash on Windows and execs the extensionless script.
-3. **OpenCode Bun plugin** ([plugins/superharness/.opencode/plugins/superharness.js](plugins/superharness/.opencode/plugins/superharness.js)) — does the same two jobs through OpenCode's `experimental.chat.system.transform` and `tool.execute.before` hooks, and auto-registers the skills dir + MCP via `config:`. It also auto-installs `workflow-state-server`'s npm deps the first time it runs.
 
-Three configs feed the three clients: [hooks.json](plugins/superharness/hooks/hooks.json) (Claude Code), [hooks-codex.json](plugins/superharness/hooks/hooks-codex.json) (Codex), [hooks-cursor.json](plugins/superharness/hooks/hooks-cursor.json) (Cursor). They differ mainly in the `matcher` set (Codex has `apply_patch`, Claude has `MultiEdit`).
+Two configs feed the two clients: [hooks.json](plugins/superharness/hooks/hooks.json) (Claude Code) and [hooks-codex.json](plugins/superharness/hooks/hooks-codex.json) (Codex). They differ mainly in the `matcher` set (Codex has `apply_patch`, Claude has `MultiEdit`).
 
 ### Context rendering
 
@@ -82,16 +72,16 @@ When `validate-workflow.js` builds the workflow graph it checks every referenced
 
 ### State-edit guard
 
-Agents must never write `.superharness/` directly. Both [workflow-pre-tool-use.mjs](plugins/superharness/hooks/workflow-pre-tool-use.mjs) and the OpenCode plugin's `tool.execute.before` check tool args for `.superharness/` path mentions and (for Bash) for write-like commands (`>`, `rm`, `mv`, `sqlite3`, etc.). All mutations must go through the MCP `transition_state` / `classify_request` / `reset_state` tools, every one of which requires a non-empty `reason` string that lands in the transition log.
+Agents must never write `.superharness/` directly. [workflow-pre-tool-use.mjs](plugins/superharness/hooks/workflow-pre-tool-use.mjs) checks tool args for `.superharness/` path mentions and (for Bash) for write-like commands (`>`, `rm`, `mv`, `sqlite3`, etc.). All mutations must go through the MCP `transition_state` / `classify_request` / `reset_state` tools, every one of which requires a non-empty `reason` string that lands in the transition log.
 
 ## Conventions that aren't obvious
 
 - **`reason` is mandatory and audited.** Every state-mutating MCP tool requires a non-empty `reason`. Don't pass placeholder strings; the transition log is the audit record for why workflow state changed.
 - **Hook scripts are extensionless on purpose.** `workflow-context` (no `.sh`) exists because Claude Code's Windows auto-detection prepends `bash` to anything ending in `.sh`. Don't rename them.
-- **Two SQLite drivers.** [state.js](plugins/superharness/workflow-state-server/state.js) picks `bun:sqlite` when running under Bun (OpenCode) and `better-sqlite3` otherwise. Don't import a driver directly.
+- **Two SQLite drivers.** [state.js](plugins/superharness/workflow-state-server/state.js) picks `bun:sqlite` when running under Bun and `better-sqlite3` otherwise. Don't import a driver directly.
 - **Workspace-scoped DB path.** `resolveWorkflowDbPath` writes to `<workspaceRoot>/.superharness/workflow-state.db` unless `SUPERHARNESS_WORKFLOW_STATE_DB` overrides it; tests use `SUPERHARNESS_WORKFLOW_STATE_MODE=memory` for `:memory:`.
 - **Bash on Windows.** This repo is developed on Windows but expects Git Bash for the `.sh` test scripts. The hook wrapper handles bash discovery automatically; the test runners assume it's on PATH or at `D:\Git\bin\bash.exe`.
 - **Project language is Chinese.** The README, `GEMINI.md`, and many skill docs are in Chinese. When editing skills or user-facing docs, match the existing language of that file.
-- **Version bumps touch five files.** `package.json`, [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json), [plugins/superharness/.claude-plugin/plugin.json](plugins/superharness/.claude-plugin/plugin.json), [plugins/superharness/.codex-plugin/plugin.json](plugins/superharness/.codex-plugin/plugin.json), and [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json) all carry the version string and must move together. (The cursor manifest was historically out of sync and easy to miss — keep it in the bump set.)
+- **Version bumps touch four files.** `package.json`, [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json), [plugins/superharness/.claude-plugin/plugin.json](plugins/superharness/.claude-plugin/plugin.json), and [plugins/superharness/.codex-plugin/plugin.json](plugins/superharness/.codex-plugin/plugin.json) all carry the version string and must move together.
 - **MCP server self-heal lives in `bootstrap.js`, not in any hook.** Claude Code spawns the MCP server via `node bootstrap.js` directly, bypassing every UserPromptSubmit / PreToolUse hook. The hook-based dep self-heal in [workflow-context.mjs](plugins/superharness/hooks/workflow-context.mjs) only covers the hook path — the MCP entrypoint needs its own check. [bootstrap.js](plugins/superharness/workflow-state-server/bootstrap.js) does a sync `existsSync` for `node_modules/@modelcontextprotocol/sdk`, runs `npm install --omit=dev` (stderr only — stdout would corrupt MCP stdio) if missing, then dynamic-imports `server.js`. Don't move the import of `@modelcontextprotocol/sdk` out of `server.js`; the wrapper pattern keeps the real server file clean and lets static imports stay at the top.
-- **`manifest.hooks` is only for ADDITIONAL hook files.** Claude Code auto-loads `<plugin_root>/hooks/hooks.json` as the standard location; pointing `manifest.hooks` at that same standard file triggers `Duplicate hooks file detected`. Codex and Cursor DO need the field set because they don't auto-discover (Codex looks for `hooks-codex.json` via the field; absence means no hooks). Hook commands in `hooks-codex.json` must use `${PLUGIN_ROOT}` (Codex official) or `${CLAUDE_PLUGIN_ROOT}` (OOTB compat alias) — Codex sets hook cwd to the session dir, not the plugin root. Additionally, Codex versions before commit `14473c216f` (2026-05-13) require explicit opt-in via `[features].plugin_hooks = true` in user config; current behavior is on by default.
+- **`manifest.hooks` is only for ADDITIONAL hook files.** Claude Code auto-loads `<plugin_root>/hooks/hooks.json` as the standard location; pointing `manifest.hooks` at that same standard file triggers `Duplicate hooks file detected`. Codex DOES need the field set because it doesn't auto-discover (Codex looks for `hooks-codex.json` via the field; absence means no hooks). Hook commands in `hooks-codex.json` must use `${PLUGIN_ROOT}` (Codex official) or `${CLAUDE_PLUGIN_ROOT}` (OOTB compat alias) — Codex sets hook cwd to the session dir, not the plugin root. Additionally, Codex versions before commit `14473c216f` (2026-05-13) require explicit opt-in via `[features].plugin_hooks = true` in user config; current behavior is on by default.

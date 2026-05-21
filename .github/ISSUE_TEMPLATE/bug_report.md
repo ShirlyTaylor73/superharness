@@ -16,7 +16,7 @@ labels: bug
 | 字段 | 值 |
 |------|---|
 | Superpowers 版本 | |
-| 工具（Claude Code、Cursor 等） | |
+| 工具（Claude Code、Codex 等） | |
 | 工具版本 | |
 | 模型 | |
 | 操作系统 + Shell | |

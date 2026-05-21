@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Superharness",
     "shortDescription": "AI coding workflow harness with skills, hooks, and state MCP.",
-    "longDescription": "Superharness provides state-machine driven skills, workflow-state hooks, and a state MCP for AI coding agents. It injects current workflow context, guards .superharness state files, and supports Claude Code, Codex, and OpenCode.",
+    "longDescription": "Superharness provides state-machine driven skills, workflow-state hooks, and a state MCP for AI coding agents. It injects current workflow context, guards .superharness state files, and supports Claude Code and Codex.",
     "developerName": "ShirlyTaylor73",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write", "Hooks"],
