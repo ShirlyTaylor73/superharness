@@ -21,17 +21,6 @@ function resolvePluginRoot() {
   );
 }
 
-function loadInstalledSkills(pluginRoot) {
-  const skillsDir = path.join(pluginRoot, 'skills');
-  if (!fs.existsSync(skillsDir)) return new Set();
-  return new Set(
-    fs.readdirSync(skillsDir, { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .filter((e) => fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md')))
-      .map((e) => e.name),
-  );
-}
-
 function hookOutput(additionalContext) {
   return additionalContext
     ? { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext } }
@@ -48,18 +37,34 @@ export async function main() {
     }
     const pluginRoot = resolvePluginRoot();
     const workflowStateDir = path.join(pluginRoot, 'workflow-state-server');
-    const { renderActiveSkill } = await import(
-      pathToFileURL(path.join(workflowStateDir, 'render-context.js')).href
-    );
+    const [{ renderActiveSkill }, { loadWorkflowConfig, buildWorkflowGraph }] = await Promise.all([
+      import(pathToFileURL(path.join(workflowStateDir, 'render-context.js')).href),
+      import(pathToFileURL(path.join(workflowStateDir, 'validate-workflow.js')).href),
+    ]);
 
     const skillsDir = path.join(pluginRoot, 'skills');
-    // Side effect: ensure skill registry is loadable; fail-open if not.
-    loadInstalledSkills(pluginRoot);
 
-    // skill name 可能与 state name 略有不同（serial_execution → serial-execution）—
-    // render-context.js 应已封装这个转换；先 try state name 原样，如果 throw 再 fail-open
+    // State 名 (e.g. serial_execution) → skill 目录名 (serial-execution) 由 YAML
+    // 的 state.skill 字段映射。从 graph 拿，不要直接用 stateName 当 skill name。
+    let skillName = toState;
     try {
-      const skillContext = renderActiveSkill({ stateName: toState, skillsDir });
+      const config = loadWorkflowConfig({ pluginRoot });
+      const installedSkills = new Set();
+      if (fs.existsSync(skillsDir)) {
+        for (const e of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+          if (e.isDirectory() && fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md'))) {
+            installedSkills.add(e.name);
+          }
+        }
+      }
+      const graph = buildWorkflowGraph(config, { installedSkills });
+      skillName = graph.states.get(toState)?.skill ?? toState;
+    } catch {
+      // graph 加载失败 → 回退用 stateName 当 skill name；renderActiveSkill 再 fail-open
+    }
+
+    try {
+      const skillContext = renderActiveSkill({ stateName: toState, skillsDir, skillName });
       process.stdout.write(JSON.stringify(hookOutput(skillContext)) + '\n');
     } catch {
       // unknown state 或 SKILL 文件不存在 → fail-open

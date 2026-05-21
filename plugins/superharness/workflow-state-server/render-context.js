@@ -84,8 +84,12 @@ export function renderWorkflowContext({ stateInfo, workflowGraph, skillsDir }) {
   return parts.join('\n') + renderStrictAppendix({ silent_stop_allowed: node.silent_stop_allowed });
 }
 
-export function renderActiveSkill({ stateName, skillsDir }) {
-  const skillPath = resolveSkillPath({ skillsDir, skillName: stateName });
+export function renderActiveSkill({ stateName, skillsDir, skillName }) {
+  // State 名可能是 underscore (serial_execution)，skill 目录是 hyphen (serial-execution)。
+  // 若 caller 显式提供 skillName（来自 graph.states.get(state).skill），用它做目录查找；
+  // 否则回退到 stateName（兼容 1:1 命名的 state，如 intake/trivial/planning）。
+  const lookupName = skillName ?? stateName;
+  const skillPath = resolveSkillPath({ skillsDir, skillName: lookupName });
   const skillContent = stripFrontmatter(fs.readFileSync(skillPath, 'utf8')).trim();
   return [
     `[Superharness] 已切到新状态，本轮继续遵循以下 SKILL：`,
