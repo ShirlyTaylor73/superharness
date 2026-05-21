@@ -16,6 +16,8 @@ import {
   listWorkflowHistory,
   resetWorkflowState,
   resolveWorkflowDbPath,
+  getTurn,
+  releaseTurnBlock,
 } from './state.js';
 import { renderWorkflowContext } from './render-context.js';
 
@@ -72,6 +74,52 @@ function wrap(handler) {
       };
     }
   };
+}
+
+const RELEASE_STOP_BLOCK_DESCRIPTION =
+  '在 silent_stop_allowed=false 的 state 内 agent 无法继续工作时，由用户通过 AskUserQuestion 明确授权"终止本轮"后调用此工具。绝不可在没有用户明确授权前调用。';
+
+const PLACEHOLDER_REASONS = new Set(['ok', 'start', '用户请求']);
+
+export async function handleReleaseStopBlock({ store, args }) {
+  const { workspaceRoot, reason } = args ?? {};
+  const trimmed = typeof reason === 'string' ? reason.trim() : '';
+  if (!trimmed || PLACEHOLDER_REASONS.has(trimmed)) {
+    throw new Error('reason must be non-empty and non-placeholder');
+  }
+  const turnRow = getTurn(store, { workspaceRoot });
+  if (!turnRow) {
+    throw new Error('no active turn for workspace');
+  }
+  releaseTurnBlock(store, { workspaceRoot, reason: trimmed });
+
+  // audit: write a transition_log row tagged with [escape] prefix.
+  // schema requires to_state NOT NULL, so use current workflow_state.state
+  // (or a sentinel if no workflow_state row exists yet).
+  const resolvedWorkspaceId = path.resolve(workspaceRoot);
+  const stateRow = store.prepare(
+    'SELECT state FROM workflow_state WHERE workspace_id = ?',
+  ).get(resolvedWorkspaceId);
+  const sentinelState = stateRow?.state ?? 'turn';
+  const turnIdRow = store.prepare(
+    'SELECT turn_id FROM workflow_turn WHERE workspace_id = ?',
+  ).get(resolvedWorkspaceId);
+  store.prepare(`
+    INSERT INTO workflow_transition_log (
+      workspace_id, from_state, to_state, previous_state, reason, source, turn_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    resolvedWorkspaceId,
+    sentinelState,
+    sentinelState,
+    null,
+    `[escape] ${trimmed}`,
+    'agent-tool',
+    turnIdRow?.turn_id ?? null,
+    Date.now(),
+  );
+
+  return { ok: true };
 }
 
 export function createTools(getRuntime = getDefaultRuntime) {
@@ -188,6 +236,22 @@ export function createTools(getRuntime = getDefaultRuntime) {
           workflowGraph: runtime.workflowGraph,
           reason: args.reason,
         });
+      }),
+    },
+    {
+      name: 'release_stop_block',
+      description: RELEASE_STOP_BLOCK_DESCRIPTION,
+      inputSchema: {
+        type: 'object',
+        required: ['workspaceRoot', 'reason'],
+        properties: {
+          workspaceRoot: { type: 'string' },
+          reason: { type: 'string' },
+        },
+      },
+      handler: wrap((args) => {
+        const runtime = getRuntime();
+        return handleReleaseStopBlock({ store: runtime.store, args });
       }),
     },
   ];
