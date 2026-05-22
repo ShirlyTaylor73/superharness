@@ -324,6 +324,7 @@ export function classifyRequest(store, {
   failure_summary = null,
   reason,
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const workspaceId = requireWorkspaceRoot(workspaceRoot);
@@ -357,6 +358,7 @@ export function transitionWorkflowState(store, {
   reason,
   source = 'agent-tool',
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const normalizedSource = normalizeSource(source);
@@ -423,6 +425,7 @@ export function resetWorkflowState(store, {
   workflowGraph,
   reason,
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const workspaceId = requireWorkspaceRoot(workspaceRoot);

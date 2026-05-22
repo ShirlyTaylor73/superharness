@@ -18,6 +18,7 @@ import {
   resolveWorkflowDbPath,
   getTurn,
   releaseTurnBlock,
+  assertNotFreeMode,
 } from './state.js';
 import { renderWorkflowContext } from './render-context.js';
 
@@ -83,6 +84,7 @@ const PLACEHOLDER_REASONS = new Set(['ok', 'start', '用户请求']);
 
 export async function handleReleaseStopBlock({ store, args }) {
   const { workspaceRoot, reason } = args ?? {};
+  assertNotFreeMode(store, workspaceRoot);
   const trimmed = typeof reason === 'string' ? reason.trim() : '';
   if (!trimmed || PLACEHOLDER_REASONS.has(trimmed)) {
     throw new Error('reason must be non-empty and non-placeholder');
