@@ -14,7 +14,7 @@ v1.3.x 把工作流约束做得很硬：状态机严格按 YAML `next` 校验、
 ### 1.2 设计目标
 
 - ✅ 提供 `/rollback` slash command，让用户回退到 transition_log 中**走过的任意 state**
-- ✅ 提供 `/free` slash command，让用户**会话级**暂停 workflow context 注入
+- ✅ 提供 `/free on|off|status` slash command，让用户**会话级**暂停 / 恢复 workflow context 注入（`/free on` 进入、`/free off` 退出、`/free` 或 `/free status` 查询当前状态）
 - ✅ 严格保持"用户控制权"语义：**agent 不能调用 rollback / free 能力**（避免 game the system）
 - ✅ free-mode 期间 MCP 层全锁 mutating tool（防 agent 偷偷推进 state）
 - ✅ `.superharness/` 写保护始终生效（即使 free-mode 也禁止 agent 直接改 DB）
