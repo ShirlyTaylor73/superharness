@@ -2,6 +2,11 @@
 *.sh text eol=lf
 hooks/session-start text eol=lf
 
+# Extensionless bash wrappers under plugins/*/hooks/ (workflow-context,
+# workflow-pre-tool-use, workflow-stop, workflow-post-transition).
+# Pattern is suffix-anchored so we don't accidentally hit dotfiles.
+plugins/*/hooks/workflow-* text eol=lf
+
 # Ensure the polyglot wrapper keeps LF (it's parsed by both cmd and bash)
 *.cmd text eol=lf
 
