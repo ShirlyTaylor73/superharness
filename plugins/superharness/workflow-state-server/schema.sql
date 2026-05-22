@@ -6,7 +6,9 @@ CREATE TABLE IF NOT EXISTS workflow_state (
   active_skill TEXT,
   task_summary TEXT,
   failure_summary TEXT,
-  updated_at INTEGER NOT NULL
+  updated_at INTEGER NOT NULL,
+  free_mode INTEGER NOT NULL DEFAULT 0,
+  free_started_at INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS workflow_transition_log (
