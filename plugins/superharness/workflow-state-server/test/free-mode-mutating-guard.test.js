@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { openWorkflowStateStore, transitionWorkflowState, classifyRequest, resetWorkflowState } from '../state.js';
+import { openWorkflowStateStore, transitionWorkflowState, classifyRequest } from '../state.js';
 import { handleReleaseStopBlock } from '../server.js';
 import { loadWorkflowConfig, buildWorkflowGraph } from '../validate-workflow.js';
 
@@ -35,12 +35,6 @@ describe('mutating tools rejected in free mode', () => {
 
   it('classifyRequest throws', () => {
     expect(() => classifyRequest(store, {
-      workspaceRoot, workflowGraph: graph, reason: 'test',
-    })).toThrow(/free mode/);
-  });
-
-  it('resetWorkflowState throws', () => {
-    expect(() => resetWorkflowState(store, {
       workspaceRoot, workflowGraph: graph, reason: 'test',
     })).toThrow(/free mode/);
   });

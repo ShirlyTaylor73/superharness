@@ -53,7 +53,7 @@ State per workspace is persisted in `<workspace>/.superharness/workflow-state.db
 
 The same workflow engine ([plugins/superharness/workflow-state-server/](plugins/superharness/workflow-state-server/)) is consumed two different ways:
 
-1. **MCP server** ([server.js](plugins/superharness/workflow-state-server/server.js)) — exposes `get_state`, `classify_request`, `transition_state`, `list_history`, `reset_state` as MCP tools. This is how agents read/mutate state.
+1. **MCP server** ([server.js](plugins/superharness/workflow-state-server/server.js)) — exposes `get_state`, `classify_request`, `transition_state`, `list_history`, `release_stop_block` as MCP tools. This is how agents read/mutate state.
 2. **Hook scripts** ([plugins/superharness/hooks/](plugins/superharness/hooks/)) — `workflow-context.mjs` runs on `UserPromptSubmit` and prints rendered workflow context into the agent's context window; `workflow-pre-tool-use.mjs` runs on `PreToolUse` and denies any tool call that would write into `.superharness/` directly. Both are invoked by [run-hook.cmd](plugins/superharness/hooks/run-hook.cmd), a polyglot batch/bash wrapper that finds Git Bash on Windows and execs the extensionless script.
 
 Two configs feed the two clients: [hooks.json](plugins/superharness/hooks/hooks.json) (Claude Code) and [hooks-codex.json](plugins/superharness/hooks/hooks-codex.json) (Codex). They differ mainly in the `matcher` set (Codex has `apply_patch`, Claude has `MultiEdit`).
@@ -72,7 +72,7 @@ When `validate-workflow.js` builds the workflow graph it checks every referenced
 
 ### State-edit guard
 
-Agents must never write `.superharness/` directly. [workflow-pre-tool-use.mjs](plugins/superharness/hooks/workflow-pre-tool-use.mjs) checks tool args for `.superharness/` path mentions and (for Bash) for write-like commands (`>`, `rm`, `mv`, `sqlite3`, etc.). All mutations must go through the MCP `transition_state` / `classify_request` / `reset_state` tools, every one of which requires a non-empty `reason` string that lands in the transition log.
+Agents must never write `.superharness/` directly. [workflow-pre-tool-use.mjs](plugins/superharness/hooks/workflow-pre-tool-use.mjs) checks tool args for `.superharness/` path mentions and (for Bash) for write-like commands (`>`, `rm`, `mv`, `sqlite3`, etc.). All mutations must go through the MCP `transition_state` / `classify_request` tools, every one of which requires a non-empty `reason` string that lands in the transition log.
 
 ## Conventions that aren't obvious
 

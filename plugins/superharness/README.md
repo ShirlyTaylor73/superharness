@@ -36,7 +36,7 @@ v1.4.0 ships two slash commands that put rollback and pause decisions back in th
   - No argument: pick from a list of the last 5 unique states.
   - With argument (e.g. `/rollback brainstorming`): jump straight to that state.
 - **`/free on|off|status`** — Session-level pause / resume of workflow context injection.
-  - While free mode is on, hooks stop injecting `SKILL.md` and the mutating MCP tools (`transition_state` / `classify_request` / `reset_state` / `release_stop_block`) are locked.
+  - While free mode is on, hooks stop injecting `SKILL.md` and the mutating MCP tools (`transition_state` / `classify_request` / `release_stop_block`) are locked.
   - `.superharness/` write protection is always on regardless of free mode.
 
 > **Codex is not supported in v1.4.0** for these two commands. Codex slash commands are a hard-coded enum and plugins cannot contribute new ones today; we will revisit once Codex ships plugin-prompts.

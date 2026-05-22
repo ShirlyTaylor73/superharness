@@ -7,7 +7,6 @@ import {
   classifyRequest,
   transitionWorkflowState,
   listWorkflowHistory,
-  resetWorkflowState,
   resolveWorkflowDbPath,
 } from '../state.js';
 import { buildWorkflowGraph } from '../validate-workflow.js';
@@ -268,28 +267,6 @@ describe('workflow state store', () => {
     expect(state.state).toBe('intake');
     expect(state.task_summary).toBe('implement state machine');
     expect(state.failure_summary).toBe('none');
-  });
-
-  it('resets state to intake and writes a user-reset log', () => {
-    const store = openStore();
-    initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
-    transitionWorkflowState(store, {
-      workspaceRoot: '/workspace/a',
-      workflowGraph,
-      from_state: 'intake',
-      to_state: 'brainstorming',
-      reason: 'ready',
-      source: 'agent-tool',
-    });
-
-    const state = resetWorkflowState(store, {
-      workspaceRoot: '/workspace/a',
-      workflowGraph,
-      reason: 'manual reset',
-    });
-
-    expect(state.state).toBe('intake');
-    expect(listWorkflowHistory(store, { workspaceRoot: '/workspace/a' }).at(-1).source).toBe('user-reset');
   });
 
   it('uses an explicit environment db path when provided', () => {

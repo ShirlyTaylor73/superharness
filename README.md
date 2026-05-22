@@ -19,7 +19,7 @@ v1.4.0 引入两个 slash command，把"何时回退、何时暂停 workflow"的
   - 有参（如 `/rollback brainstorming`）→ 直接回到指定 state。
   - 仅允许回退到日志里真实出现过的 state，避免凭空跳转。
 - **`/free on|off|status`**：会话级暂停 / 恢复 workflow context 注入。
-  - free-mode 期间 hook 不再注入 SKILL.md，MCP 的 mutating 工具（`transition_state` / `classify_request` / `reset_state` / `release_stop_block`）全部锁定。
+  - free-mode 期间 hook 不再注入 SKILL.md，MCP 的 mutating 工具（`transition_state` / `classify_request` / `release_stop_block`）全部锁定。
   - `.superharness/` 写保护始终生效，free mode 不影响审计与状态文件的安全性。
   - 适合临时跳出状态机做一些不想被规范约束的探索或对话。
 

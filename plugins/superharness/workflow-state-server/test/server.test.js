@@ -62,7 +62,6 @@ describe('TOOLS', () => {
       'classify_request',
       'transition_state',
       'list_history',
-      'reset_state',
       'release_stop_block',
     ]);
   });

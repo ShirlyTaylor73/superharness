@@ -422,28 +422,3 @@ export function listWorkflowHistory(store, { workspaceRoot } = {}) {
   `).all(workspaceId);
 }
 
-export function resetWorkflowState(store, {
-  workspaceRoot,
-  workflowGraph,
-  reason,
-} = {}) {
-  assertNotFreeMode(store, workspaceRoot);
-  const graph = requireWorkflowGraph(workflowGraph);
-  const trimmedReason = requireReason(reason);
-  const workspaceId = requireWorkspaceRoot(workspaceRoot);
-  const current = getWorkflowState(store, { workspaceRoot, workflowGraph: graph });
-  const reset = upsertState(store, {
-    workspaceId,
-    workflowGraph: graph,
-    state: graph.entryState,
-  });
-  insertLog(store, {
-    workspaceId,
-    fromState: current.state,
-    toState: graph.entryState,
-    previousState: null,
-    reason: trimmedReason,
-    source: 'user-reset',
-  });
-  return reset;
-}

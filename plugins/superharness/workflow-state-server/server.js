@@ -14,7 +14,6 @@ import {
   classifyRequest,
   transitionWorkflowState,
   listWorkflowHistory,
-  resetWorkflowState,
   resolveWorkflowDbPath,
   getTurn,
   releaseTurnBlock,
@@ -217,26 +216,6 @@ export function createTools(getRuntime = getDefaultRuntime) {
         const runtime = getRuntime();
         return listWorkflowHistory(runtime.store, {
           workspaceRoot: args.workspaceRoot,
-        });
-      }),
-    },
-    {
-      name: 'reset_state',
-      description: 'Reset workflow state back to the entry state.',
-      inputSchema: {
-        type: 'object',
-        required: ['workspaceRoot', 'reason'],
-        properties: {
-          workspaceRoot: { type: 'string' },
-          reason: { type: 'string' },
-        },
-      },
-      handler: wrap((args) => {
-        const runtime = getRuntime();
-        return resetWorkflowState(runtime.store, {
-          workspaceRoot: args.workspaceRoot,
-          workflowGraph: runtime.workflowGraph,
-          reason: args.reason,
         });
       }),
     },
