@@ -28,6 +28,19 @@ The old text bootstrap entry has been removed from runtime. Superharness starts 
 - Claude Code / Codex: `PreToolUse -> workflow-pre-tool-use`
 - State tools: `superharness-workflow-state`
 
+## v1.4.0: User Control
+
+v1.4.0 ships two slash commands that put rollback and pause decisions back in the user's hands:
+
+- **`/rollback [state]`** — Roll the workflow back to a state that actually appeared in `transition_log`.
+  - No argument: pick from a list of the last 5 unique states.
+  - With argument (e.g. `/rollback brainstorming`): jump straight to that state.
+- **`/free on|off|status`** — Session-level pause / resume of workflow context injection.
+  - While free mode is on, hooks stop injecting `SKILL.md` and the mutating MCP tools (`transition_state` / `classify_request` / `reset_state` / `release_stop_block`) are locked.
+  - `.superharness/` write protection is always on regardless of free mode.
+
+> **Codex is not supported in v1.4.0** for these two commands. Codex slash commands are a hard-coded enum and plugins cannot contribute new ones today; we will revisit once Codex ships plugin-prompts.
+
 ## Development
 
 ```bash
