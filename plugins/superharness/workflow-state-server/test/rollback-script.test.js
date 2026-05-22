@@ -65,4 +65,10 @@ describe('rollback.mjs', () => {
     expect(r.stderr).toMatch(/未初始化/);
     fs.rmSync(empty, { recursive: true, force: true });
   });
+
+  it('rejects systematic_debugging as target', () => {
+    const r = spawnSync('node', [ROLLBACK, ws, 'systematic_debugging', '[rollback] x'], { encoding: 'utf8' });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/不支持目标 systematic_debugging/);
+  });
 });

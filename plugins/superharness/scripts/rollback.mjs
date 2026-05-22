@@ -18,6 +18,11 @@ if (!fs.existsSync(dbPath)) {
   process.exit(1);
 }
 
+if (toStateArg === 'systematic_debugging') {
+  console.error('rollback 不支持目标 systematic_debugging（systematic_debugging 是 preemptive 分支，需 previous_state 字段；rollback 只回主流程态）');
+  process.exit(1);
+}
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const pluginRoot = path.resolve(scriptDir, '..');
 const stateModule = await import(pathToFileURL(path.join(pluginRoot, 'workflow-state-server', 'state.js')).href);

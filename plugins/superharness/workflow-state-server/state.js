@@ -125,6 +125,8 @@ function normalizeRow(row) {
     task_summary: row.task_summary ?? null,
     failure_summary: row.failure_summary ?? null,
     updated_at: row.updated_at,
+    free_mode: row.free_mode === 1,
+    free_started_at: row.free_started_at ?? null,
   };
 }
 
