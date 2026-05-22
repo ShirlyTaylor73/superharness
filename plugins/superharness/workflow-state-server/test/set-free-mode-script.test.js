@@ -56,4 +56,10 @@ describe('set-free-mode.mjs', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/free mode/i);
   });
+
+  it('empty action defaults to status', () => {
+    const r = spawnSync('node', [SCRIPT, ws], { encoding: 'utf8' });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/free mode/i);
+  });
 });

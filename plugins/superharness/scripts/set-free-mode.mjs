@@ -3,10 +3,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const [, , workspaceRootArg, action] = process.argv;
+const [, , workspaceRootArg, actionArg] = process.argv;
+const action = actionArg || 'status';
 
 if (!workspaceRootArg || !['on', 'off', 'status'].includes(action)) {
-  console.error('usage: set-free-mode.mjs <workspaceRoot> <on|off|status>');
+  console.error('usage: set-free-mode.mjs <workspaceRoot> [on|off|status]');
   process.exit(1);
 }
 
