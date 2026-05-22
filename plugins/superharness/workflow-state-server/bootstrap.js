@@ -36,4 +36,9 @@ if (!fs.existsSync(sdkPath)) {
   process.stderr.write('[superharness] deps installed, starting server\n');
 }
 
-await import('./server.js');
+// Explicitly call main() — server.js's `if (process.argv[1] === ...)` guard
+// fails when launched via this wrapper because argv[1] points to bootstrap.js,
+// not server.js. Without this call the MCP stdio transport never starts and
+// the process exits silently.
+const serverModule = await import('./server.js');
+await serverModule.main();
