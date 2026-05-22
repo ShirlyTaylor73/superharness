@@ -3,4 +3,4 @@ description: 进入或退出 free-mode；暂停 superharness workflow context �
 allowed-tools: Bash
 ---
 
-!node "${CLAUDE_PLUGIN_ROOT}/scripts/set-free-mode.mjs" "$CLAUDE_PROJECT_DIR" "$ARGS"
+!node "${CLAUDE_PLUGIN_ROOT}/scripts/set-free-mode.mjs" "$PWD" "$ARGS"
