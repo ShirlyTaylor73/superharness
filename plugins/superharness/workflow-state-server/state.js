@@ -65,6 +65,31 @@ export function ensureTurnIdColumn(db) {
   db.exec("CREATE INDEX IF NOT EXISTS idx_workflow_transition_turn ON workflow_transition_log(turn_id)");
 }
 
+export function ensureFreeModeColumns(db) {
+  const columns = db.prepare("PRAGMA table_info(workflow_state)").all();
+  const names = new Set(columns.map((c) => c.name));
+  if (!names.has('free_mode')) {
+    db.exec("ALTER TABLE workflow_state ADD COLUMN free_mode INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has('free_started_at')) {
+    db.exec("ALTER TABLE workflow_state ADD COLUMN free_started_at INTEGER");
+  }
+}
+
+export function readFreeMode(store, workspaceRoot) {
+  const workspaceId = requireWorkspaceRoot(workspaceRoot);
+  const row = store.prepare(
+    'SELECT free_mode FROM workflow_state WHERE workspace_id = ?'
+  ).get(workspaceId);
+  return row?.free_mode === 1;
+}
+
+export function assertNotFreeMode(store, workspaceRoot) {
+  if (readFreeMode(store, workspaceRoot)) {
+    throw new Error('workspace is in free mode; /free off first');
+  }
+}
+
 export function createTurn(store, { workspaceRoot, turnId }) {
   const workspaceId = requireWorkspaceRoot(workspaceRoot);
   store.db.prepare(`
@@ -100,6 +125,8 @@ function normalizeRow(row) {
     task_summary: row.task_summary ?? null,
     failure_summary: row.failure_summary ?? null,
     updated_at: row.updated_at,
+    free_mode: row.free_mode === 1,
+    free_started_at: row.free_started_at ?? null,
   };
 }
 
@@ -242,6 +269,7 @@ export function openWorkflowStateStore({ dbPath, mode } = {}) {
   store.exec('PRAGMA foreign_keys = ON');
   store.exec(readSchema());
   ensureTurnIdColumn(store);
+  ensureFreeModeColumns(store);
 
   return store;
 }
@@ -298,6 +326,7 @@ export function classifyRequest(store, {
   failure_summary = null,
   reason,
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const workspaceId = requireWorkspaceRoot(workspaceRoot);
@@ -331,6 +360,7 @@ export function transitionWorkflowState(store, {
   reason,
   source = 'agent-tool',
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const normalizedSource = normalizeSource(source);
@@ -397,6 +427,7 @@ export function resetWorkflowState(store, {
   workflowGraph,
   reason,
 } = {}) {
+  assertNotFreeMode(store, workspaceRoot);
   const graph = requireWorkflowGraph(workflowGraph);
   const trimmedReason = requireReason(reason);
   const workspaceId = requireWorkspaceRoot(workspaceRoot);

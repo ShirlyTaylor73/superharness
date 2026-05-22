@@ -37,6 +37,14 @@ export async function main() {
     }
     const pluginRoot = resolvePluginRoot();
     const workflowStateDir = path.join(pluginRoot, 'workflow-state-server');
+
+    // Free-mode check: skip skill injection entirely
+    const workspaceRoot = path.resolve(input.cwd || process.cwd());
+    const { isFreeMode } = await import(pathToFileURL(path.join(pluginRoot, 'hooks', 'lib', 'free-mode-check.mjs')).href);
+    if (await isFreeMode({ pluginRoot, workspaceRoot })) {
+      process.stdout.write(JSON.stringify({}) + '\n');
+      return;
+    }
     const [{ renderActiveSkill }, { loadWorkflowConfig, buildWorkflowGraph }] = await Promise.all([
       import(pathToFileURL(path.join(workflowStateDir, 'render-context.js')).href),
       import(pathToFileURL(path.join(workflowStateDir, 'validate-workflow.js')).href),
