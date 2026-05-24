@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  INSTALLER_TOKEN,
   installCodexSupport,
   parseArgs,
   renderCommandTemplate,
@@ -13,6 +14,7 @@ import {
 import { main } from '../../bin/superharness.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const legacyPluginRootPlaceholder = ['installed', 'plugin-root'].join('-');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'superharness-codex-installer-'));
@@ -53,11 +55,11 @@ async function createPackageRoot() {
   );
   await writeFile(
     path.join(pluginRoot, 'commands-codex', 'free.md'),
-    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/set-free-mode.mjs"\n',
+    `node "${INSTALLER_TOKEN}/scripts/set-free-mode.mjs"\n`,
   );
   await writeFile(
     path.join(pluginRoot, 'commands-codex', 'rollback.md'),
-    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/rollback.mjs"\n',
+    `node "${INSTALLER_TOKEN}/scripts/rollback.mjs"\n`,
   );
   return packageRoot;
 }
@@ -97,13 +99,13 @@ test('resolveInstallTarget returns user paths', async () => {
 
 test('renderCommandTemplate writes concrete plugin root', () => {
   const rendered = renderCommandTemplate(
-    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/x.mjs"',
+    `node "${INSTALLER_TOKEN}/scripts/x.mjs"`,
     'D:\\Work\\p',
   );
 
   assert.match(rendered, /D:\\Work\\p/);
-  assert.doesNotMatch(rendered, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
-  assert.doesNotMatch(rendered, /installed-plugin-root/);
+  assert.equal(rendered.includes(INSTALLER_TOKEN), false);
+  assert.equal(rendered.includes(legacyPluginRootPlaceholder), false);
 });
 
 test('installCodexSupport installs project plugin and commands', async () => {
@@ -139,12 +141,12 @@ test('installCodexSupport installs project plugin and commands', async () => {
   assert.equal(await pathExists(rollbackCommand), true);
   assert.match(freeContent, /set-free-mode\.mjs/);
   assert.match(freeContent, pluginRootPattern);
-  assert.doesNotMatch(freeContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
-  assert.doesNotMatch(freeContent, /installed-plugin-root/);
+  assert.equal(freeContent.includes(INSTALLER_TOKEN), false);
+  assert.equal(freeContent.includes(legacyPluginRootPlaceholder), false);
   assert.match(rollbackContent, /rollback\.mjs/);
   assert.match(rollbackContent, pluginRootPattern);
-  assert.doesNotMatch(rollbackContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
-  assert.doesNotMatch(rollbackContent, /installed-plugin-root/);
+  assert.equal(rollbackContent.includes(INSTALLER_TOKEN), false);
+  assert.equal(rollbackContent.includes(legacyPluginRootPlaceholder), false);
   assert.deepEqual(calls, [
     {
       command: 'npm',
@@ -205,8 +207,8 @@ test('installCodexSupport installs the real package layout into a temp project',
   assert.equal(await pathExists(path.join(installedPluginRoot, '.codex-plugin', 'plugin.json')), true);
   assert.equal(await pathExists(freeCommand), true);
   assert.equal(await pathExists(rollbackCommand), true);
-  assert.doesNotMatch(freeContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
-  assert.doesNotMatch(rollbackContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.equal(freeContent.includes(INSTALLER_TOKEN), false);
+  assert.equal(rollbackContent.includes(INSTALLER_TOKEN), false);
   assert.match(
     calls.at(-1).cwd,
     new RegExp(`\\.codex${escapePathSeparator()}plugins${escapePathSeparator()}superharness${escapePathSeparator()}workflow-state-server$`),

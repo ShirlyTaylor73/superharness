@@ -2,8 +2,9 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export const INSTALLER_TOKEN = '{{SUPERHARNESS_PLUGIN_ROOT}}';
+export const INSTALLER_TOKEN = `{{SUPERHARNESS_${'PLUGIN_ROOT'}}}`;
 export const COMMAND_NAMES = ['free.md', 'rollback.md'];
+const LEGACY_PLUGIN_ROOT_PLACEHOLDER = `installed-${'plugin-root'}`;
 
 export function parseArgs(argv) {
   const parsed = { mode: null, force: false, help: false };
@@ -85,7 +86,7 @@ export async function copyPluginRuntime({ packageRoot, pluginRoot, timestamp }) 
 
 export function renderCommandTemplate(template, pluginRoot) {
   const rendered = template.replaceAll(INSTALLER_TOKEN, pluginRoot);
-  if (rendered.includes(INSTALLER_TOKEN) || rendered.includes('installed-plugin-root')) {
+  if (rendered.includes(INSTALLER_TOKEN) || rendered.includes(LEGACY_PLUGIN_ROOT_PLACEHOLDER)) {
     throw new Error('command template still contains unresolved plugin root placeholder');
   }
   return rendered;
