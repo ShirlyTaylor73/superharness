@@ -1,0 +1,156 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  installCodexSupport,
+  parseArgs,
+  renderCommandTemplate,
+  resolveInstallTarget,
+} from '../../bin/lib/codex-installer.js';
+
+async function makeTempDir() {
+  return fs.mkdtemp(path.join(os.tmpdir(), 'superharness-codex-installer-'));
+}
+
+async function writeFile(filePath, content) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content, 'utf8');
+}
+
+async function pathExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function createPackageRoot() {
+  const packageRoot = await makeTempDir();
+  const pluginRoot = path.join(packageRoot, 'plugins', 'superharness');
+  await writeFile(
+    path.join(pluginRoot, '.codex-plugin', 'plugin.json'),
+    '{"name":"superharness","version":"1.5.0"}\n',
+  );
+  await writeFile(path.join(pluginRoot, '.mcp.json'), '{}\n');
+  await writeFile(path.join(pluginRoot, 'hooks', 'hooks-codex.json'), '[]\n');
+  await writeFile(path.join(pluginRoot, 'scripts', 'set-free-mode.mjs'), 'console.log("free")\n');
+  await writeFile(path.join(pluginRoot, 'scripts', 'rollback.mjs'), 'console.log("rollback")\n');
+  await writeFile(
+    path.join(pluginRoot, 'workflow-state-server', 'package.json'),
+    '{"name":"workflow-state-server"}\n',
+  );
+  await writeFile(
+    path.join(pluginRoot, 'commands-codex', 'free.md'),
+    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/set-free-mode.mjs"\n',
+  );
+  await writeFile(
+    path.join(pluginRoot, 'commands-codex', 'rollback.md'),
+    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/rollback.mjs"\n',
+  );
+  return packageRoot;
+}
+
+test('parseArgs resolves install flags', () => {
+  assert.deepEqual(parseArgs(['--project']), { mode: 'project', force: false, help: false });
+  assert.deepEqual(parseArgs(['--user', '--force']), { mode: 'user', force: true, help: false });
+  assert.deepEqual(parseArgs(['--global']), { mode: 'user', force: false, help: false });
+  assert.deepEqual(parseArgs(['--help']), { mode: null, force: false, help: true });
+  assert.throws(() => parseArgs(['--project', '--user']), /choose only one/i);
+  assert.throws(() => parseArgs(['--unknown']), /unknown argument: --unknown/i);
+});
+
+test('resolveInstallTarget returns project paths', async () => {
+  const cwd = await makeTempDir();
+  const target = resolveInstallTarget({ mode: 'project', cwd });
+
+  assert.equal(target.mode, 'project');
+  assert.equal(target.codexRoot, path.join(cwd, '.codex'));
+  assert.equal(target.pluginRoot, path.join(cwd, '.codex', 'plugins', 'superharness'));
+  assert.equal(target.commandsRoot, path.join(cwd, '.codex', 'commands'));
+});
+
+test('resolveInstallTarget returns user paths', async () => {
+  const homeDir = await makeTempDir();
+  const target = resolveInstallTarget({ mode: 'user', homeDir });
+
+  assert.equal(target.mode, 'user');
+  assert.equal(target.codexRoot, path.join(homeDir, '.codex'));
+  assert.equal(target.pluginRoot, path.join(homeDir, '.codex', 'plugins', 'superharness'));
+  assert.equal(target.commandsRoot, path.join(homeDir, '.codex', 'commands'));
+});
+
+test('renderCommandTemplate writes concrete plugin root', () => {
+  const rendered = renderCommandTemplate(
+    'node "{{SUPERHARNESS_PLUGIN_ROOT}}/scripts/x.mjs"',
+    'D:\\Work\\p',
+  );
+
+  assert.match(rendered, /D:\\Work\\p/);
+  assert.doesNotMatch(rendered, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.doesNotMatch(rendered, /installed-plugin-root/);
+});
+
+test('installCodexSupport installs project plugin and commands', async () => {
+  const packageRoot = await createPackageRoot();
+  const cwd = await makeTempDir();
+  const homeDir = await makeTempDir();
+  const calls = [];
+
+  const result = await installCodexSupport({
+    mode: 'project',
+    cwd,
+    homeDir,
+    packageRoot,
+    now: () => new Date('2026-05-25T07:30:00Z'),
+    runCommand: async (command, args, options) => calls.push({ command, args, cwd: options.cwd }),
+  });
+
+  const installedPluginRoot = path.join(cwd, '.codex', 'plugins', 'superharness');
+  const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
+  const freeContent = await fs.readFile(freeCommand, 'utf8');
+
+  assert.equal(result.mode, 'project');
+  assert.equal(result.pluginRoot, installedPluginRoot);
+  assert.equal(await pathExists(path.join(installedPluginRoot, 'scripts', 'set-free-mode.mjs')), true);
+  assert.equal(await pathExists(freeCommand), true);
+  assert.match(freeContent, new RegExp(installedPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(freeContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.deepEqual(calls, [
+    {
+      command: 'npm',
+      args: ['install', '--omit=dev'],
+      cwd: path.join(installedPluginRoot, 'workflow-state-server'),
+    },
+  ]);
+});
+
+test('installCodexSupport backs up existing targets before overwrite', async () => {
+  const packageRoot = await createPackageRoot();
+  const cwd = await makeTempDir();
+  const homeDir = await makeTempDir();
+  const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
+  const oldPluginFile = path.join(cwd, '.codex', 'plugins', 'superharness', 'old.txt');
+
+  await writeFile(freeCommand, 'old command\n');
+  await writeFile(oldPluginFile, 'old plugin\n');
+
+  await installCodexSupport({
+    mode: 'project',
+    cwd,
+    homeDir,
+    packageRoot,
+    now: () => new Date('2026-05-25T07:30:00Z'),
+    runCommand: async () => {},
+  });
+
+  const commandBackup = `${freeCommand}.bak-20260525-073000`;
+  const pluginBackup = `${path.join(cwd, '.codex', 'plugins', 'superharness')}.bak-20260525-073000`;
+
+  assert.match(await fs.readFile(freeCommand, 'utf8'), /set-free-mode\.mjs/);
+  assert.equal(await fs.readFile(commandBackup, 'utf8'), 'old command\n');
+  assert.equal(await fs.readFile(path.join(pluginBackup, 'old.txt'), 'utf8'), 'old plugin\n');
+});
