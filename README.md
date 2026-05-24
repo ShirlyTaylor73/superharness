@@ -23,7 +23,7 @@ v1.4.0 引入两个 slash command，把"何时回退、何时暂停 workflow"的
   - `.superharness/` 写保护始终生效，free mode 不影响审计与状态文件的安全性。
   - 适合临时跳出状态机做一些不想被规范约束的探索或对话。
 
-> **Codex 平台暂不支持**：v1.4.0 的这两个 slash command 仅在 Claude Code 可用。Codex 的 slash command 目前是硬编码 enum、plugin 无法贡献新命令，等 Codex 推出 plugin-prompts 能力后再补齐。
+> **Codex 支持方式**：从 v1.5.0 开始，Codex 可通过 `npx superharness@latest` 安装兼容版 `free` / `rollback` command。Codex 不支持 Claude Code 的 `!node` 原生 command 执行语法，因此 Codex command 会指示 agent 用 shell tool 执行等价 Node 脚本。
 
 ## 架构
 
@@ -115,6 +115,23 @@ flowchart TD
 
 ### Codex CLI
 
+#### Codex 快速安装
+
+```bash
+npx superharness@latest
+```
+
+安装器会用方向键询问安装到当前项目 `.codex/` 还是用户级 `~/.codex/`。非交互环境使用：
+
+```bash
+npx superharness@latest --project
+npx superharness@latest --user
+```
+
+Codex 版 command 目前支持 `free` 和 `rollback`，安装后写入 `.codex/commands/`。由于 Codex 不支持 Claude Code 的 `!node` 原生 command 执行语法，Codex command 会指示 agent 用 shell tool 执行等价 Node 脚本。
+
+#### Codex 插件市场
+
 ```bash
 codex plugin marketplace add ShirlyTaylor73/superharness
 ```
@@ -189,4 +206,3 @@ npm.cmd test
 ## License
 
 MIT
-

@@ -18,6 +18,8 @@ It provides:
 | `workflow/` | Workflow graph configuration |
 | `workflow-state-server/` | MCP server, state store, renderer, and tests |
 | `hooks/` | Claude Code / Codex hook config and commands |
+| `commands/` | Claude Code slash command markdown |
+| `commands-codex/` | Codex command templates rendered by the npx installer |
 | `archived-skills/` | Historical disabled skills that must not be registered |
 
 ## Runtime Entry
@@ -39,7 +41,20 @@ v1.4.0 ships two slash commands that put rollback and pause decisions back in th
   - While free mode is on, hooks stop injecting `SKILL.md` and the mutating MCP tools (`transition_state` / `classify_request` / `release_stop_block`) are locked.
   - `.superharness/` write protection is always on regardless of free mode.
 
-> **Codex is not supported in v1.4.0** for these two commands. Codex slash commands are a hard-coded enum and plugins cannot contribute new ones today; we will revisit once Codex ships plugin-prompts.
+Codex support for these commands is installed through the root package:
+
+```bash
+npx superharness@latest
+```
+
+The installer asks whether to install into the current project `.codex/` or the user-level `~/.codex/` directory. Non-interactive installs can use:
+
+```bash
+npx superharness@latest --project
+npx superharness@latest --user
+```
+
+Codex command markdown currently supports `free` and `rollback`. `commands/` is the Claude Code version; `commands-codex/` is the Codex template source. During install, `commands-codex/` is rendered into `.codex/commands/` with the concrete absolute plugin path because Codex does not support Claude Code's `!node` native command execution syntax.
 
 ## Development
 
