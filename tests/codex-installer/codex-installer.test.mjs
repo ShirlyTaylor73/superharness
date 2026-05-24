@@ -9,6 +9,7 @@ import {
   renderCommandTemplate,
   resolveInstallTarget,
 } from '../../bin/lib/codex-installer.js';
+import { main } from '../../bin/superharness.js';
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'superharness-codex-installer-'));
@@ -61,6 +62,10 @@ test('parseArgs resolves install flags', () => {
   assert.deepEqual(parseArgs(['--help']), { mode: null, force: false, help: true });
   assert.throws(() => parseArgs(['--project', '--user']), /choose only one/i);
   assert.throws(() => parseArgs(['--unknown']), /unknown argument: --unknown/i);
+});
+
+test('main rejects non-interactive install without explicit target', async () => {
+  await assert.rejects(() => main([], { CI: '1' }), /requires --project or --user/i);
 });
 
 test('resolveInstallTarget returns project paths', async () => {
