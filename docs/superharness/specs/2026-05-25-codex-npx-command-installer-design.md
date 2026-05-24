@@ -144,7 +144,7 @@ After copying `plugins/superharness/`, the installer runs dependency
 installation for:
 
 ```text
-<installed-plugin-root>/workflow-state-server/
+<resolved absolute plugin root>/workflow-state-server/
 ```
 
 The install command is:
@@ -197,17 +197,22 @@ version:
 - `off`
 - `status`
 
-The command body instructs the agent to execute the equivalent Node script with
-the installed plugin root:
+The source template may contain an internal installer token such as
+`{{SUPERHARNESS_PLUGIN_ROOT}}`, but the installed `.codex/commands/free.md` file
+must contain the concrete absolute plugin root. The installed command must not
+contain `<installed-plugin-root>` or any other value the agent has to infer.
+
+The installed command body instructs the agent to execute the equivalent Node
+script:
 
 ```powershell
-node "<installed-plugin-root>/scripts/set-free-mode.mjs" "<workspaceRoot>" "<on|off|status>"
+node "D:\path\to\.codex\plugins\superharness\scripts\set-free-mode.mjs" (Get-Location).Path "<on|off|status>"
 ```
 
 For Git Bash or other POSIX shells, the same command can be represented as:
 
 ```bash
-node "<installed-plugin-root>/scripts/set-free-mode.mjs" "<workspaceRoot>" "<on|off|status>"
+node "/path/to/.codex/plugins/superharness/scripts/set-free-mode.mjs" "$PWD" "<on|off|status>"
 ```
 
 The agent must report the script stdout briefly and stop. It must not perform
@@ -225,13 +230,13 @@ The Codex version preserves the Claude Code workflow:
 4. Execute the rollback script:
 
 ```powershell
-node "<installed-plugin-root>/scripts/rollback.mjs" "<workspaceRoot>" "<chosen_state>" "[rollback] 用户 /rollback <args>"
+node "D:\path\to\.codex\plugins\superharness\scripts\rollback.mjs" (Get-Location).Path "<chosen_state>" "[rollback] 用户 /rollback <args>"
 ```
 
 For Git Bash or other POSIX shells:
 
 ```bash
-node "<installed-plugin-root>/scripts/rollback.mjs" "<workspaceRoot>" "<chosen_state>" "[rollback] 用户 /rollback <args>"
+node "/path/to/.codex/plugins/superharness/scripts/rollback.mjs" "$PWD" "<chosen_state>" "[rollback] 用户 /rollback <args>"
 ```
 
 The command must preserve the current restriction that rollback to
@@ -261,6 +266,14 @@ For user install:
 
 This avoids relying on `PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT`, npx cache paths, or
 Codex marketplace cache paths inside command markdown.
+
+Codex source check: `PLUGIN_ROOT` and `CLAUDE_PLUGIN_ROOT` are injected for
+plugin hook handlers, and hook discovery performs `${PLUGIN_ROOT}` string
+replacement before running hook commands. That behavior is scoped to hooks and
+does not apply to normal agent shell commands or command markdown. Codex shell
+execution does inject `CODEX_THREAD_ID`, but it does not provide a reliable
+plugin-root variable. Therefore, installed command markdown must use the
+absolute path rendered by the installer.
 
 ## CLI architecture
 
@@ -311,7 +324,8 @@ Add focused tests for the installer logic:
 - Project install creates `.codex/plugins/superharness` and both command files.
 - User install writes under a supplied fake home directory.
 - Existing command files and plugin directory are backed up before overwrite.
-- Generated command markdown contains the concrete installed plugin root.
+- Generated command markdown contains the concrete installed plugin root and no
+  `<installed-plugin-root>` placeholder.
 - Non-interactive execution without target flags fails.
 - `--project` and `--user` bypass interactive selection.
 
