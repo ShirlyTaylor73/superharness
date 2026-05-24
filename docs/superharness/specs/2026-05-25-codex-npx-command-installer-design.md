@@ -41,6 +41,25 @@ markdown into Codex-visible locations.
    accepting that Codex command execution is agent-mediated rather than
    render-time native execution.
 
+## Release version
+
+This feature targets Superharness `1.5.0`.
+
+Rationale: the npx installer and Codex command compatibility are new user-facing
+capabilities, not a patch-only bug fix. The implementation must bump the
+published package and plugin metadata together.
+
+Version updates must include:
+
+- `package.json`
+- `.claude-plugin/marketplace.json`
+- `plugins/superharness/.claude-plugin/plugin.json`
+- `plugins/superharness/.codex-plugin/plugin.json`
+
+The root npm package must also be publishable for `npx superharness@latest`, so
+the implementation must remove or replace the current `private: true` setting
+before release.
+
 ## Non-goals
 
 - Do not add native slash command support to Codex itself.
