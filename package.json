@@ -1,12 +1,21 @@
 {
   "name": "superharness",
-  "version": "1.4.1",
-  "private": true,
+  "version": "1.5.0",
   "engines": {
     "node": ">=20.0.0"
   },
   "description": "Programmatic workflow harness for AI coding agents with skills, hooks, MCP state management, and cross-client support.",
   "type": "module",
+  "bin": {
+    "superharness": "./bin/superharness.js"
+  },
+  "files": [
+    "bin/",
+    "plugins/superharness/"
+  ],
+  "scripts": {
+    "test:installer": "node --test tests/codex-installer/*.test.mjs"
+  },
   "keywords": [
     "superharness",
     "claude-code",
@@ -41,4 +50,3 @@
   "author": "ShirlyTaylor73",
   "license": "MIT"
 }
-
