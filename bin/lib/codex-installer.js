@@ -76,7 +76,10 @@ export async function copyPluginRuntime({ packageRoot, pluginRoot, timestamp }) 
   const source = path.join(packageRoot, 'plugins', 'superharness');
   const backup = await backupExistingPath(pluginRoot, timestamp);
   await fs.mkdir(path.dirname(pluginRoot), { recursive: true });
-  await fs.cp(source, pluginRoot, { recursive: true });
+  await fs.cp(source, pluginRoot, {
+    recursive: true,
+    filter: (sourcePath) => path.basename(sourcePath) !== 'node_modules',
+  });
   return backup;
 }
 

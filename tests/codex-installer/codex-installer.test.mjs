@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   installCodexSupport,
   parseArgs,
@@ -10,6 +11,8 @@ import {
   resolveInstallTarget,
 } from '../../bin/lib/codex-installer.js';
 import { main } from '../../bin/superharness.js';
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'superharness-codex-installer-'));
@@ -43,6 +46,10 @@ async function createPackageRoot() {
   await writeFile(
     path.join(pluginRoot, 'workflow-state-server', 'package.json'),
     '{"name":"workflow-state-server"}\n',
+  );
+  await writeFile(
+    path.join(pluginRoot, 'workflow-state-server', 'node_modules', 'local-only.txt'),
+    'do not copy\n',
   );
   await writeFile(
     path.join(pluginRoot, 'commands-codex', 'free.md'),
@@ -124,6 +131,10 @@ test('installCodexSupport installs project plugin and commands', async () => {
   assert.equal(result.mode, 'project');
   assert.equal(result.pluginRoot, installedPluginRoot);
   assert.equal(await pathExists(path.join(installedPluginRoot, 'scripts', 'set-free-mode.mjs')), true);
+  assert.equal(
+    await pathExists(path.join(installedPluginRoot, 'workflow-state-server', 'node_modules')),
+    false,
+  );
   assert.equal(await pathExists(freeCommand), true);
   assert.equal(await pathExists(rollbackCommand), true);
   assert.match(freeContent, /set-free-mode\.mjs/);
@@ -169,3 +180,39 @@ test('installCodexSupport backs up existing targets before overwrite', async () 
   assert.equal(await fs.readFile(commandBackup, 'utf8'), 'old command\n');
   assert.equal(await fs.readFile(path.join(pluginBackup, 'old.txt'), 'utf8'), 'old plugin\n');
 });
+
+test('installCodexSupport installs the real package layout into a temp project', async () => {
+  const cwd = await makeTempDir();
+  const calls = [];
+
+  await installCodexSupport({
+    mode: 'project',
+    cwd,
+    packageRoot: repoRoot,
+    runCommand: async (command, args, options) => calls.push({ command, args, cwd: options.cwd }),
+  });
+
+  const installedPluginRoot = path.join(cwd, '.codex', 'plugins', 'superharness');
+  const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
+  const rollbackCommand = path.join(cwd, '.codex', 'commands', 'rollback.md');
+  const freeContent = await fs.readFile(freeCommand, 'utf8');
+  const rollbackContent = await fs.readFile(rollbackCommand, 'utf8');
+
+  assert.equal(
+    await pathExists(path.join(installedPluginRoot, 'workflow-state-server', 'bootstrap.js')),
+    true,
+  );
+  assert.equal(await pathExists(path.join(installedPluginRoot, '.codex-plugin', 'plugin.json')), true);
+  assert.equal(await pathExists(freeCommand), true);
+  assert.equal(await pathExists(rollbackCommand), true);
+  assert.doesNotMatch(freeContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.doesNotMatch(rollbackContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.match(
+    calls.at(-1).cwd,
+    new RegExp(`\\.codex${escapePathSeparator()}plugins${escapePathSeparator()}superharness${escapePathSeparator()}workflow-state-server$`),
+  );
+});
+
+function escapePathSeparator() {
+  return path.sep === '\\' ? '\\\\' : '/';
+}
