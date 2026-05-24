@@ -7,6 +7,8 @@ It provides:
 - State-machine driven skills for structured software development workflows.
 - Claude Code / Codex hooks for workflow context injection and `.superharness/` write protection.
 - A programmatic workflow state server backed by SQLite and configured by YAML.
+- User-controlled workflow rollback through `/rollback [state]`, limited to states that appear in `transition_log`.
+- Session-level workflow context pause and resume through `/free on|off|status`, with mutating state tools locked while free mode is on.
 
 ## Layout
 
@@ -30,16 +32,7 @@ The old text bootstrap entry has been removed from runtime. Superharness starts 
 - Claude Code / Codex: `PreToolUse -> workflow-pre-tool-use`
 - State tools: `superharness-workflow-state`
 
-## v1.4.0: User Control
-
-v1.4.0 ships two slash commands that put rollback and pause decisions back in the user's hands:
-
-- **`/rollback [state]`** — Roll the workflow back to a state that actually appeared in `transition_log`.
-  - No argument: pick from a list of the last 5 unique states.
-  - With argument (e.g. `/rollback brainstorming`): jump straight to that state.
-- **`/free on|off|status`** — Session-level pause / resume of workflow context injection.
-  - While free mode is on, hooks stop injecting `SKILL.md` and the mutating MCP tools (`transition_state` / `classify_request` / `release_stop_block`) are locked.
-  - `.superharness/` write protection is always on regardless of free mode.
+## Codex Command Install
 
 Codex support for these commands is installed through the root package:
 
