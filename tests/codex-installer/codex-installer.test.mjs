@@ -111,14 +111,24 @@ test('installCodexSupport installs project plugin and commands', async () => {
 
   const installedPluginRoot = path.join(cwd, '.codex', 'plugins', 'superharness');
   const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
+  const rollbackCommand = path.join(cwd, '.codex', 'commands', 'rollback.md');
   const freeContent = await fs.readFile(freeCommand, 'utf8');
+  const rollbackContent = await fs.readFile(rollbackCommand, 'utf8');
+  const pluginRootPattern = new RegExp(installedPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
   assert.equal(result.mode, 'project');
   assert.equal(result.pluginRoot, installedPluginRoot);
   assert.equal(await pathExists(path.join(installedPluginRoot, 'scripts', 'set-free-mode.mjs')), true);
   assert.equal(await pathExists(freeCommand), true);
-  assert.match(freeContent, new RegExp(installedPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.equal(await pathExists(rollbackCommand), true);
+  assert.match(freeContent, /set-free-mode\.mjs/);
+  assert.match(freeContent, pluginRootPattern);
   assert.doesNotMatch(freeContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.doesNotMatch(freeContent, /installed-plugin-root/);
+  assert.match(rollbackContent, /rollback\.mjs/);
+  assert.match(rollbackContent, pluginRootPattern);
+  assert.doesNotMatch(rollbackContent, /\{\{SUPERHARNESS_PLUGIN_ROOT\}\}/);
+  assert.doesNotMatch(rollbackContent, /installed-plugin-root/);
   assert.deepEqual(calls, [
     {
       command: 'npm',
