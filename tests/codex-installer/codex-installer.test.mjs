@@ -83,7 +83,7 @@ test('package metadata uses the owned scoped npm package name', async () => {
   const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'));
 
   assert.equal(packageJson.name, '@shirlytaylor73/superharness');
-  assert.deepEqual(packageJson.bin, { superharness: './bin/superharness.js' });
+  assert.deepEqual(packageJson.bin, { superharness: 'bin/superharness.js' });
 });
 
 test('documentation uses the owned scoped npx package name', async () => {
