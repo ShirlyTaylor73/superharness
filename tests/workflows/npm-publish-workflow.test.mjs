@@ -15,8 +15,9 @@ test('npm publish workflow publishes scoped package from matching v tag', async 
 
   assert.match(workflow, /on:\s*\n\s*push:\s*\n\s*tags:\s*\n\s*-\s*['"]v\*['"]/);
   assert.match(workflow, /permissions:\s*\n\s*contents:\s*read\s*\n\s*id-token:\s*write/);
-  assert.match(workflow, /node-version:\s*['"]20\.x['"]/);
+  assert.match(workflow, /node-version:\s*['"]24['"]/);
   assert.match(workflow, /registry-url:\s*['"]https:\/\/registry\.npmjs\.org['"]/);
+  assert.match(workflow, /package-manager-cache:\s*false/);
   assert.match(workflow, /expectedTag\s*=\s*`v\$\{pkg\.version\}`/);
   assert.match(workflow, /process\.env\.GITHUB_REF_NAME/);
   assert.match(workflow, /npm run test:installer/);
