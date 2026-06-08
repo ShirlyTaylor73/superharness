@@ -45,6 +45,8 @@ async function createPackageRoot() {
   await writeFile(path.join(pluginRoot, 'hooks', 'hooks-codex.json'), '[]\n');
   await writeFile(path.join(pluginRoot, 'scripts', 'set-free-mode.mjs'), 'console.log("free")\n');
   await writeFile(path.join(pluginRoot, 'scripts', 'rollback.mjs'), 'console.log("rollback")\n');
+  await writeFile(path.join(pluginRoot, 'skills', 'intake', 'SKILL.md'), '# Intake\n');
+  await writeFile(path.join(pluginRoot, 'skills', 'verification', 'SKILL.md'), '# Verification\n');
   await writeFile(
     path.join(pluginRoot, 'workflow-state-server', 'package.json'),
     '{"name":"workflow-state-server"}\n',
@@ -77,14 +79,33 @@ test('main rejects non-interactive install without explicit target', async () =>
   await assert.rejects(() => main([], { CI: '1' }), /requires --project or --user/i);
 });
 
+test('package metadata uses the owned scoped npm package name', async () => {
+  const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'));
+
+  assert.equal(packageJson.name, '@shirlytaylor73/superharness');
+  assert.deepEqual(packageJson.bin, { superharness: './bin/superharness.js' });
+});
+
+test('documentation uses the owned scoped npx package name', async () => {
+  const rootReadme = await fs.readFile(path.join(repoRoot, 'README.md'), 'utf8');
+  const pluginReadme = await fs.readFile(path.join(repoRoot, 'plugins', 'superharness', 'README.md'), 'utf8');
+
+  for (const content of [rootReadme, pluginReadme]) {
+    assert.doesNotMatch(content, /\bnpx superharness@latest\b/);
+    assert.match(content, /\bnpx @shirlytaylor73\/superharness@latest\b/);
+  }
+});
+
 test('resolveInstallTarget returns project paths', async () => {
   const cwd = await makeTempDir();
   const target = resolveInstallTarget({ mode: 'project', cwd });
 
   assert.equal(target.mode, 'project');
   assert.equal(target.codexRoot, path.join(cwd, '.codex'));
+  assert.equal(target.agentsRoot, path.join(cwd, '.agents'));
   assert.equal(target.pluginRoot, path.join(cwd, '.codex', 'plugins', 'superharness'));
   assert.equal(target.commandsRoot, path.join(cwd, '.codex', 'commands'));
+  assert.equal(target.skillsRoot, path.join(cwd, '.agents', 'skills'));
 });
 
 test('resolveInstallTarget returns user paths', async () => {
@@ -93,8 +114,10 @@ test('resolveInstallTarget returns user paths', async () => {
 
   assert.equal(target.mode, 'user');
   assert.equal(target.codexRoot, path.join(homeDir, '.codex'));
+  assert.equal(target.agentsRoot, path.join(homeDir, '.agents'));
   assert.equal(target.pluginRoot, path.join(homeDir, '.codex', 'plugins', 'superharness'));
   assert.equal(target.commandsRoot, path.join(homeDir, '.codex', 'commands'));
+  assert.equal(target.skillsRoot, path.join(homeDir, '.agents', 'skills'));
 });
 
 test('renderCommandTemplate writes concrete plugin root', () => {
@@ -124,6 +147,7 @@ test('installCodexSupport installs project plugin and commands', async () => {
   });
 
   const installedPluginRoot = path.join(cwd, '.codex', 'plugins', 'superharness');
+  const installedSkillsRoot = path.join(cwd, '.agents', 'skills');
   const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
   const rollbackCommand = path.join(cwd, '.codex', 'commands', 'rollback.md');
   const freeContent = await fs.readFile(freeCommand, 'utf8');
@@ -132,7 +156,10 @@ test('installCodexSupport installs project plugin and commands', async () => {
 
   assert.equal(result.mode, 'project');
   assert.equal(result.pluginRoot, installedPluginRoot);
+  assert.equal(result.skillsRoot, installedSkillsRoot);
   assert.equal(await pathExists(path.join(installedPluginRoot, 'scripts', 'set-free-mode.mjs')), true);
+  assert.equal(await pathExists(path.join(installedSkillsRoot, 'intake', 'SKILL.md')), true);
+  assert.equal(await pathExists(path.join(installedSkillsRoot, 'verification', 'SKILL.md')), true);
   assert.equal(
     await pathExists(path.join(installedPluginRoot, 'workflow-state-server', 'node_modules')),
     false,
@@ -162,9 +189,11 @@ test('installCodexSupport backs up existing targets before overwrite', async () 
   const homeDir = await makeTempDir();
   const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
   const oldPluginFile = path.join(cwd, '.codex', 'plugins', 'superharness', 'old.txt');
+  const oldSkillFile = path.join(cwd, '.agents', 'skills', 'intake', 'old.txt');
 
   await writeFile(freeCommand, 'old command\n');
   await writeFile(oldPluginFile, 'old plugin\n');
+  await writeFile(oldSkillFile, 'old skill\n');
 
   await installCodexSupport({
     mode: 'project',
@@ -177,10 +206,12 @@ test('installCodexSupport backs up existing targets before overwrite', async () 
 
   const commandBackup = `${freeCommand}.bak-20260525-073000`;
   const pluginBackup = `${path.join(cwd, '.codex', 'plugins', 'superharness')}.bak-20260525-073000`;
+  const skillBackup = `${path.join(cwd, '.agents', 'skills', 'intake')}.bak-20260525-073000`;
 
   assert.match(await fs.readFile(freeCommand, 'utf8'), /set-free-mode\.mjs/);
   assert.equal(await fs.readFile(commandBackup, 'utf8'), 'old command\n');
   assert.equal(await fs.readFile(path.join(pluginBackup, 'old.txt'), 'utf8'), 'old plugin\n');
+  assert.equal(await fs.readFile(path.join(skillBackup, 'old.txt'), 'utf8'), 'old skill\n');
 });
 
 test('installCodexSupport installs the real package layout into a temp project', async () => {
@@ -195,6 +226,7 @@ test('installCodexSupport installs the real package layout into a temp project',
   });
 
   const installedPluginRoot = path.join(cwd, '.codex', 'plugins', 'superharness');
+  const installedSkillsRoot = path.join(cwd, '.agents', 'skills');
   const freeCommand = path.join(cwd, '.codex', 'commands', 'free.md');
   const rollbackCommand = path.join(cwd, '.codex', 'commands', 'rollback.md');
   const freeContent = await fs.readFile(freeCommand, 'utf8');
@@ -205,6 +237,8 @@ test('installCodexSupport installs the real package layout into a temp project',
     true,
   );
   assert.equal(await pathExists(path.join(installedPluginRoot, '.codex-plugin', 'plugin.json')), true);
+  assert.equal(await pathExists(path.join(installedSkillsRoot, 'intake', 'SKILL.md')), true);
+  assert.equal(await pathExists(path.join(installedSkillsRoot, 'verification', 'SKILL.md')), true);
   assert.equal(await pathExists(freeCommand), true);
   assert.equal(await pathExists(rollbackCommand), true);
   assert.equal(freeContent.includes(INSTALLER_TOKEN), false);

@@ -32,22 +32,22 @@ The old text bootstrap entry has been removed from runtime. Superharness starts 
 - Claude Code / Codex: `PreToolUse -> workflow-pre-tool-use`
 - State tools: `superharness-workflow-state`
 
-## Codex Command Install
+## Codex npx Install
 
-Codex support for these commands is installed through the root package:
-
-```bash
-npx superharness@latest
-```
-
-The installer asks whether to install into the current project `.codex/` or the user-level `~/.codex/` directory. Non-interactive installs can use:
+Codex skills and command support are installed through the root package:
 
 ```bash
-npx superharness@latest --project
-npx superharness@latest --user
+npx @shirlytaylor73/superharness@latest
 ```
 
-Codex command markdown currently supports `free` and `rollback`. `commands/` is the Claude Code version; `commands-codex/` is the Codex template source. During install, `commands-codex/` is rendered into `.codex/commands/` with the concrete absolute plugin path because Codex does not support Claude Code's `!node` native command execution syntax.
+The installer asks whether to install into the current project directories or the user-level directories. Project installs write skills to `.agents/skills/` and commands/runtime to `.codex/`; user installs write skills to `~/.agents/skills/` and commands/runtime to `~/.codex/`. Non-interactive installs can use:
+
+```bash
+npx @shirlytaylor73/superharness@latest --project
+npx @shirlytaylor73/superharness@latest --user
+```
+
+The installer copies active skills from `skills/` into `.agents/skills/`. Codex command markdown currently supports `free` and `rollback`. `commands/` is the Claude Code version; `commands-codex/` is the Codex template source. During install, `commands-codex/` is rendered into `.codex/commands/` with the concrete absolute plugin path because Codex does not support Claude Code's `!node` native command execution syntax.
 
 ## Development
 

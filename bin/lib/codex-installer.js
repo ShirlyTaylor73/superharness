@@ -48,12 +48,17 @@ export function resolveInstallTarget({
   const codexRoot = mode === 'project'
     ? path.resolve(cwd, '.codex')
     : path.resolve(homeDir, '.codex');
+  const agentsRoot = mode === 'project'
+    ? path.resolve(cwd, '.agents')
+    : path.resolve(homeDir, '.agents');
 
   return {
     mode,
     codexRoot,
+    agentsRoot,
     pluginRoot: path.join(codexRoot, 'plugins', 'superharness'),
     commandsRoot: path.join(codexRoot, 'commands'),
+    skillsRoot: path.join(agentsRoot, 'skills'),
   };
 }
 
@@ -82,6 +87,25 @@ export async function copyPluginRuntime({ packageRoot, pluginRoot, timestamp }) 
     filter: (sourcePath) => path.basename(sourcePath) !== 'node_modules',
   });
   return backup;
+}
+
+export async function copyAgentSkills({ packageRoot, skillsRoot, timestamp }) {
+  const source = path.join(packageRoot, 'plugins', 'superharness', 'skills');
+  const backups = [];
+  await fs.mkdir(skillsRoot, { recursive: true });
+
+  const entries = await fs.readdir(source, { withFileTypes: true });
+  for (const entry of entries) {
+    const sourcePath = path.join(source, entry.name);
+    const destination = path.join(skillsRoot, entry.name);
+    const backup = await backupExistingPath(destination, timestamp);
+    if (backup) {
+      backups.push(backup);
+    }
+    await fs.cp(sourcePath, destination, { recursive: entry.isDirectory() });
+  }
+
+  return backups;
 }
 
 export function renderCommandTemplate(template, pluginRoot) {
@@ -127,6 +151,11 @@ export async function installCodexSupport({
   if (pluginBackup) {
     backups.push(pluginBackup);
   }
+  backups.push(...await copyAgentSkills({
+    packageRoot,
+    skillsRoot: target.skillsRoot,
+    timestamp,
+  }));
 
   for (const commandName of COMMAND_NAMES) {
     const source = path.join(packageRoot, 'plugins', 'superharness', 'commands-codex', commandName);
@@ -146,6 +175,7 @@ export async function installCodexSupport({
     mode: target.mode,
     pluginRoot: target.pluginRoot,
     commandsRoot: target.commandsRoot,
+    skillsRoot: target.skillsRoot,
     backups,
   };
 }

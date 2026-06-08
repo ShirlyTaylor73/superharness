@@ -33,24 +33,25 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
 export function usage() {
   return `Usage: superharness [--project|--user] [--force]
 
-Install Superharness Codex support into a project or user Codex directory.
+Install Superharness Codex support into project or user .agents and .codex directories.
 
 Options:
-  --project   Install into the current repository's .codex directory
-  --user      Install into ~/.codex for all Codex projects
+  --project   Install into the current repository's .agents and .codex directories
+  --user      Install into ~/.agents and ~/.codex for all Codex projects
   --global    Alias for --user
   --force     Backup and overwrite existing installed assets
   -h, --help  Show this help
 `;
 }
 
-function successMessage({ mode, pluginRoot, commandsRoot, backups }) {
+function successMessage({ mode, pluginRoot, commandsRoot, skillsRoot, backups }) {
   const scope = mode === 'project' ? 'project' : 'user';
   const backupLine = backups.length > 0
     ? `Backups created:\n${backups.map((backup) => `  - ${backup}`).join('\n')}\n`
     : '';
 
   return `Superharness Codex support installed for ${scope} scope.
+Skills: ${skillsRoot}
 Plugin: ${pluginRoot}
 Commands: ${commandsRoot}
 ${backupLine}`;

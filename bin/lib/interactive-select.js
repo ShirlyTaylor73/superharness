@@ -6,12 +6,12 @@ const OPTIONS = [
   {
     value: 'project',
     label: 'Project install',
-    description: "Install into this repository's .codex directory",
+    description: "Install into this repository's .agents and .codex directories",
   },
   {
     value: 'user',
     label: 'User install',
-    description: 'Install into ~/.codex for all Codex projects',
+    description: 'Install into ~/.agents and ~/.codex for all Codex projects',
   },
   {
     value: 'cancel',

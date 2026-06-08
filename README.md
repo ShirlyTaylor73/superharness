@@ -112,17 +112,17 @@ flowchart TD
 #### Codex 快速安装
 
 ```bash
-npx superharness@latest
+npx @shirlytaylor73/superharness@latest
 ```
 
-安装器会用方向键询问安装到当前项目 `.codex/` 还是用户级 `~/.codex/`。非交互环境使用：
+安装器会用方向键询问安装到当前项目目录还是用户级目录。项目级会写入 `.agents/skills/` 和 `.codex/`；用户级会写入 `~/.agents/skills/` 和 `~/.codex/`。非交互环境使用：
 
 ```bash
-npx superharness@latest --project
-npx superharness@latest --user
+npx @shirlytaylor73/superharness@latest --project
+npx @shirlytaylor73/superharness@latest --user
 ```
 
-Codex 版 command 目前支持 `free` 和 `rollback`，安装后写入 `.codex/commands/`。由于 Codex 不支持 Claude Code 的 `!node` 原生 command 执行语法，Codex command 会指示 agent 用 shell tool 执行等价 Node 脚本。
+安装器会把 active skills 平铺安装到 `.agents/skills/`，并把 Codex 版 `free` / `rollback` command 写入 `.codex/commands/`。由于 Codex 不支持 Claude Code 的 `!node` 原生 command 执行语法，Codex command 会指示 agent 用 shell tool 执行等价 Node 脚本。
 
 #### Codex 插件市场
 
