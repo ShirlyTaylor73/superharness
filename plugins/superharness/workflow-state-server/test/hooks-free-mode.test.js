@@ -26,7 +26,11 @@ function runHook(scriptPath, ws, input) {
   return spawnSync('node', [scriptPath], {
     input: JSON.stringify(input),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+    env: {
+      ...process.env,
+      CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
+      CLAUDE_PROJECT_DIR: ws,
+    },
   });
 }
 

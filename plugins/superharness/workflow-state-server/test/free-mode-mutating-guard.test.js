@@ -41,7 +41,7 @@ describe('mutating tools rejected in free mode', () => {
 
   it('handleReleaseStopBlock throws', async () => {
     const result = await handleReleaseStopBlock({
-      store, args: { workspaceRoot, reason: 'test' },
+      store, workspaceRoot, args: { reason: 'test' },
     }).catch((e) => ({ error: e.message }));
     expect(result.error).toMatch(/free mode/);
   });
