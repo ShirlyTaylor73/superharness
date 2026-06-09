@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { loadWorkflowConfig, buildWorkflowGraph } from '../validate-workflow.js';
+import {
+  openWorkflowStateStore,
+  initializeWorkflowState,
+  transitionWorkflowState,
+} from '../state.js';
 
 const pluginRoot = path.resolve('..');
 const hooksDir = path.join(pluginRoot, 'hooks');
@@ -18,7 +24,7 @@ function runNode(script, {
     cwd,
     env: {
       ...process.env,
-      SUPERHARNESS_WORKFLOW_STATE_DB: path.join(cwd, '.superharness', 'workflow-state.db'),
+      CLAUDE_PROJECT_DIR: cwd,
       ...env,
     },
     input: JSON.stringify(input),
@@ -55,6 +61,57 @@ describe('workflow-context hook CLI', () => {
 
     expect(output.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
     expect(output.hookSpecificOutput.additionalContext).toContain('current_state: intake');
+  });
+
+  it('uses CLAUDE_PROJECT_DIR instead of hook cwd for workflow state', () => {
+    const sessionRoot = mkdtempSync(path.join(tmpdir(), 'superharness-session-'));
+    const projectRoot = mkdtempSync(path.join(tmpdir(), 'superharness-project-'));
+    const config = loadWorkflowConfig({ pluginRoot, workspaceRoot: projectRoot });
+    const graph = buildWorkflowGraph(config, {
+      installedSkills: new Set([
+        'intake',
+        'exploration',
+        'trivial',
+        'brainstorming',
+        'planning',
+        'serial-execution',
+        'parallel-execution',
+        'verification',
+        'finishing',
+        'systematic-debugging',
+      ]),
+    });
+    const store = openWorkflowStateStore({
+      dbPath: path.join(projectRoot, '.superharness', 'workflow-state.db'),
+    });
+    try {
+      initializeWorkflowState(store, {
+        workspaceRoot: projectRoot,
+        workflowGraph: graph,
+        reason: 'start',
+      });
+      transitionWorkflowState(store, {
+        workspaceRoot: projectRoot,
+        workflowGraph: graph,
+        from_state: 'intake',
+        to_state: 'exploration',
+        reason: 'route to exploration',
+      });
+    } finally {
+      store.close();
+    }
+
+    const output = runNode(workflowContext, {
+      cwd: sessionRoot,
+      env: {
+        CLAUDE_PLUGIN_ROOT: pluginRoot,
+        CLAUDE_PROJECT_DIR: projectRoot,
+      },
+      input: { cwd: sessionRoot, hook_event_name: 'UserPromptSubmit' },
+    });
+
+    expect(output.hookSpecificOutput.additionalContext).toContain('current_state: exploration');
+    expect(existsSync(path.join(sessionRoot, '.superharness', 'workflow-state.db'))).toBe(false);
   });
 
   it('renders stop-work context on configuration failure', () => {

@@ -37,11 +37,12 @@ const workflowGraph = buildWorkflowGraph({
 
 const stores = [];
 
-function runtimeFor(store) {
+function runtimeFor(store, workspaceRoot = '/workspace/a') {
   return {
     store,
     workflowGraph,
     skillsDir: 'unused',
+    workspaceRoot,
   };
 }
 
@@ -103,6 +104,33 @@ describe('TOOLS', () => {
 
     expect(result.error).toMatch(/intake.*finishing/);
     expect(getWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph }).state).toBe('intake');
+  });
+
+  it('does not expose workspaceRoot in transition_state schema', () => {
+    const store = openWorkflowStateStore({ mode: 'memory' });
+    stores.push(store);
+    const tools = createTools(() => runtimeFor(store, '/workspace/a'));
+    const transition = toolByName(tools, 'transition_state');
+
+    expect(transition.inputSchema.required).not.toContain('workspaceRoot');
+    expect(transition.inputSchema.properties.workspaceRoot).toBeUndefined();
+  });
+
+  it('uses runtime workspace when transitioning without workspaceRoot', async () => {
+    const store = openWorkflowStateStore({ mode: 'memory' });
+    stores.push(store);
+    initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
+    const tools = createTools(() => runtimeFor(store, '/workspace/a'));
+
+    const result = await toolByName(tools, 'transition_state').handler({
+      from_state: 'intake',
+      to_state: 'exploration',
+      reason: 'question only',
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.state).toBe('exploration');
+    expect(getWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph }).state).toBe('exploration');
   });
 });
 
