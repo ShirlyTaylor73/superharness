@@ -7,7 +7,8 @@ allowed-tools: mcp__plugin_superharness_superharness-workflow-state__list_histor
 
 用户输入了 `/rollback $ARGS`。这是 Codex 兼容 command：最终 rollback 命令必须由 agent 调用 shell tool 直接执行。
 
-步骤 1：调用 `list_history(workspaceRoot=<当前工作目录>)` 获取历史。
+步骤 1：调用 `list_history()` 获取历史。
+Codex 的 workspace source-of-truth 另行设计；不要手动给 Superharness MCP tool 传 `workspaceRoot`。
 
 步骤 2：解析参数。
 

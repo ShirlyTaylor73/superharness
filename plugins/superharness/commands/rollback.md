@@ -7,7 +7,7 @@ allowed-tools: mcp__plugin_superharness_superharness-workflow-state__list_histor
 
 用户输入了 `/rollback $ARGS`。按以下步骤执行：
 
-**步骤 1**：调 `list_history(workspaceRoot=$PWD)` 拿历史。
+**步骤 1**：调 `list_history()` 拿当前 Claude 项目的历史。
 
 **步骤 2 解析参数**：
 
@@ -22,7 +22,7 @@ allowed-tools: mcp__plugin_superharness_superharness-workflow-state__list_histor
 **步骤 4 执行 rollback**：
 
 ```bash
-!node "${CLAUDE_PLUGIN_ROOT}/scripts/rollback.mjs" "$PWD" "<chosen_state>" "[rollback] 用户 /rollback $ARGS"
+!node "${CLAUDE_PLUGIN_ROOT}/scripts/rollback.mjs" "${CLAUDE_PROJECT_DIR}" "<chosen_state>" "[rollback] 用户 /rollback $ARGS"
 ```
 
 **步骤 5 报告**：根据脚本 stdout 简短报告"已从 X 回到 Y"。

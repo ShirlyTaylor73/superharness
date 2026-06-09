@@ -32,6 +32,8 @@ The old text bootstrap entry has been removed from runtime. Superharness starts 
 - Claude Code / Codex: `PreToolUse -> workflow-pre-tool-use`
 - State tools: `superharness-workflow-state`
 
+Claude Code uses `CLAUDE_PROJECT_DIR` as the trusted project root for workflow state. The MCP tools no longer require `workspaceRoot`; they bind to the trusted project root during startup, and `.superharness/` is created there.
+
 ## Codex npx Install
 
 Codex skills and command support are installed through the root package:

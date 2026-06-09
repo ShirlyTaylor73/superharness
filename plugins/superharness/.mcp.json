@@ -3,7 +3,10 @@
     "superharness-workflow-state": {
       "command": "node",
       "args": ["workflow-state-server/bootstrap.js"],
-      "cwd": "."
+      "cwd": ".",
+      "env": {
+        "CLAUDE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
     }
   }
 }
