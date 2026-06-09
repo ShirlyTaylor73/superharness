@@ -71,7 +71,7 @@ describe('TOOLS', () => {
     const store = openWorkflowStateStore({ mode: 'memory' });
     stores.push(store);
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
-    const tools = createTools(() => runtimeFor(store));
+    const tools = createTools(() => runtimeFor(store, '/workspace/a'));
 
     // intake -> brainstorming is the v3 entry-to-development path
     const result = await toolByName(tools, 'transition_state').handler({
@@ -92,7 +92,7 @@ describe('TOOLS', () => {
     const store = openWorkflowStateStore({ mode: 'memory' });
     stores.push(store);
     initializeWorkflowState(store, { workspaceRoot: '/workspace/a', workflowGraph, reason: 'start' });
-    const tools = createTools(() => runtimeFor(store));
+    const tools = createTools(() => runtimeFor(store, '/workspace/a'));
 
     // intake -> finishing is not a legal transition in v3
     const result = await toolByName(tools, 'transition_state').handler({
@@ -168,7 +168,7 @@ describe('v3 transitions', () => {
       );
     }
 
-    const tools = createTools(() => runtimeFor(store));
+    const tools = createTools(() => runtimeFor(store, workspaceRoot));
     const result = await toolByName(tools, 'transition_state').handler({
       workspaceRoot,
       from_state: from,

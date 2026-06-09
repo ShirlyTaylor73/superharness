@@ -12,7 +12,8 @@ describe('release_stop_block MCP tool', () => {
   it('sets stop_block_released=1 and release_reason', async () => {
     const res = await handleReleaseStopBlock({
       store,
-      args: { workspaceRoot: '/ws', reason: '环境错误，用户授权终止' },
+      workspaceRoot: '/ws',
+      args: { reason: '环境错误，用户授权终止' },
     });
     expect(res.ok).toBe(true);
     const row = getTurn(store, { workspaceRoot: '/ws' });
@@ -23,7 +24,8 @@ describe('release_stop_block MCP tool', () => {
   it('writes audit row with [escape] prefix', async () => {
     await handleReleaseStopBlock({
       store,
-      args: { workspaceRoot: '/ws', reason: '磁盘满' },
+      workspaceRoot: '/ws',
+      args: { reason: '磁盘满' },
     });
     const auditRows = store.db.prepare("SELECT * FROM workflow_transition_log WHERE reason LIKE '[escape]%'").all();
     expect(auditRows.length).toBe(1);
@@ -33,14 +35,16 @@ describe('release_stop_block MCP tool', () => {
   it('rejects empty reason', async () => {
     await expect(handleReleaseStopBlock({
       store,
-      args: { workspaceRoot: '/ws', reason: '' },
+      workspaceRoot: '/ws',
+      args: { reason: '' },
     })).rejects.toThrow(/reason/);
   });
 
   it('rejects placeholder reason (ok / start)', async () => {
     await expect(handleReleaseStopBlock({
       store,
-      args: { workspaceRoot: '/ws', reason: 'ok' },
+      workspaceRoot: '/ws',
+      args: { reason: 'ok' },
     })).rejects.toThrow();
   });
 });

@@ -20,6 +20,7 @@ import {
   assertNotFreeMode,
 } from './state.js';
 import { renderWorkflowContext } from './render-context.js';
+import { resolveTrustedWorkspaceRoot } from './workspace.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PLUGIN_ROOT = path.resolve(__dirname, '..');
@@ -35,8 +36,8 @@ function loadInstalledSkills(pluginRoot = DEFAULT_PLUGIN_ROOT) {
   );
 }
 
-function createRuntime({
-  workspaceRoot = process.cwd(),
+export function createRuntime({
+  workspaceRoot = resolveTrustedWorkspaceRoot(process.env),
   pluginRoot = DEFAULT_PLUGIN_ROOT,
 } = {}) {
   const config = loadWorkflowConfig({ pluginRoot, workspaceRoot });
@@ -53,6 +54,7 @@ function createRuntime({
     store,
     workflowGraph,
     skillsDir: path.join(pluginRoot, 'skills'),
+    workspaceRoot,
   };
 }
 
@@ -81,8 +83,8 @@ const RELEASE_STOP_BLOCK_DESCRIPTION =
 
 const PLACEHOLDER_REASONS = new Set(['ok', 'start', '用户请求']);
 
-export async function handleReleaseStopBlock({ store, args }) {
-  const { workspaceRoot, reason } = args ?? {};
+export async function handleReleaseStopBlock({ store, workspaceRoot, args }) {
+  const { reason } = args ?? {};
   assertNotFreeMode(store, workspaceRoot);
   const trimmed = typeof reason === 'string' ? reason.trim() : '';
   if (!trimmed || PLACEHOLDER_REASONS.has(trimmed)) {
@@ -130,15 +132,13 @@ export function createTools(getRuntime = getDefaultRuntime) {
       description: 'Return current workflow state and rendered workflow context.',
       inputSchema: {
         type: 'object',
-        required: ['workspaceRoot'],
-        properties: {
-          workspaceRoot: { type: 'string' },
-        },
+        required: [],
+        properties: {},
       },
       handler: wrap((args) => {
         const runtime = getRuntime();
         const state = getWorkflowState(runtime.store, {
-          workspaceRoot: args.workspaceRoot,
+          workspaceRoot: runtime.workspaceRoot,
           workflowGraph: runtime.workflowGraph,
         });
         return {
@@ -156,9 +156,8 @@ export function createTools(getRuntime = getDefaultRuntime) {
       description: 'Record a task or failure summary for the active workflow.',
       inputSchema: {
         type: 'object',
-        required: ['workspaceRoot', 'reason'],
+        required: ['reason'],
         properties: {
-          workspaceRoot: { type: 'string' },
           task_summary: { type: 'string' },
           failure_summary: { type: 'string' },
           reason: { type: 'string' },
@@ -167,7 +166,7 @@ export function createTools(getRuntime = getDefaultRuntime) {
       handler: wrap((args) => {
         const runtime = getRuntime();
         return classifyRequest(runtime.store, {
-          workspaceRoot: args.workspaceRoot,
+          workspaceRoot: runtime.workspaceRoot,
           workflowGraph: runtime.workflowGraph,
           task_summary: args.task_summary,
           failure_summary: args.failure_summary,
@@ -180,9 +179,8 @@ export function createTools(getRuntime = getDefaultRuntime) {
       description: 'Validate and execute a workflow state transition.',
       inputSchema: {
         type: 'object',
-        required: ['workspaceRoot', 'from_state', 'to_state', 'reason'],
+        required: ['from_state', 'to_state', 'reason'],
         properties: {
-          workspaceRoot: { type: 'string' },
           from_state: { type: 'string' },
           to_state: { type: 'string' },
           previous_state: { type: 'string' },
@@ -192,7 +190,7 @@ export function createTools(getRuntime = getDefaultRuntime) {
       handler: wrap((args) => {
         const runtime = getRuntime();
         return transitionWorkflowState(runtime.store, {
-          workspaceRoot: args.workspaceRoot,
+          workspaceRoot: runtime.workspaceRoot,
           workflowGraph: runtime.workflowGraph,
           from_state: args.from_state,
           to_state: args.to_state,
@@ -207,15 +205,13 @@ export function createTools(getRuntime = getDefaultRuntime) {
       description: 'List workflow transition history for a workspace.',
       inputSchema: {
         type: 'object',
-        required: ['workspaceRoot'],
-        properties: {
-          workspaceRoot: { type: 'string' },
-        },
+        required: [],
+        properties: {},
       },
       handler: wrap((args) => {
         const runtime = getRuntime();
         return listWorkflowHistory(runtime.store, {
-          workspaceRoot: args.workspaceRoot,
+          workspaceRoot: runtime.workspaceRoot,
         });
       }),
     },
@@ -224,15 +220,18 @@ export function createTools(getRuntime = getDefaultRuntime) {
       description: RELEASE_STOP_BLOCK_DESCRIPTION,
       inputSchema: {
         type: 'object',
-        required: ['workspaceRoot', 'reason'],
+        required: ['reason'],
         properties: {
-          workspaceRoot: { type: 'string' },
           reason: { type: 'string' },
         },
       },
       handler: wrap((args) => {
         const runtime = getRuntime();
-        return handleReleaseStopBlock({ store: runtime.store, args });
+        return handleReleaseStopBlock({
+          store: runtime.store,
+          workspaceRoot: runtime.workspaceRoot,
+          args,
+        });
       }),
     },
   ];
