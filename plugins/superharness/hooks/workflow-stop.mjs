@@ -55,9 +55,10 @@ export async function main() {
   let store;
   try {
     const input = await readStdinJson();
-    const workspaceRoot = path.resolve(input.cwd || process.cwd());
     const pluginRoot = resolvePluginRoot();
     const workflowStateDir = path.join(pluginRoot, 'workflow-state-server');
+    const { resolveTrustedWorkspaceRoot } = await import(pathToFileURL(path.join(workflowStateDir, 'workspace.js')).href);
+    const workspaceRoot = resolveTrustedWorkspaceRoot(process.env);
 
     // Free-mode check: skip stop-block entirely
     const { isFreeMode } = await import(pathToFileURL(path.join(pluginRoot, 'hooks', 'lib', 'free-mode-check.mjs')).href);

@@ -127,24 +127,26 @@ export async function main() {
 
   try {
     const input = await readStdinJson();
-    const workspaceRoot = path.resolve(input.cwd || process.cwd());
 
     // Free-mode check: skip injection entirely
     const { isFreeMode } = await import(pathToFileURL(path.join(pluginRoot, 'hooks', 'lib', 'free-mode-check.mjs')).href);
-    if (await isFreeMode({ pluginRoot, workspaceRoot })) {
-      process.stdout.write(JSON.stringify({}) + '\n');
-      return;
-    }
 
     const [
       { loadWorkflowConfig, buildWorkflowGraph },
       { openWorkflowStateStore, getWorkflowState, resolveWorkflowDbPath, createTurn },
       { renderWorkflowContext },
+      { resolveTrustedWorkspaceRoot },
     ] = await Promise.all([
       importFrom(workflowStateDir, 'validate-workflow.js'),
       importFrom(workflowStateDir, 'state.js'),
       importFrom(workflowStateDir, 'render-context.js'),
+      importFrom(workflowStateDir, 'workspace.js'),
     ]);
+    const workspaceRoot = resolveTrustedWorkspaceRoot(process.env);
+    if (await isFreeMode({ pluginRoot, workspaceRoot })) {
+      process.stdout.write(JSON.stringify({}) + '\n');
+      return;
+    }
     const config = loadWorkflowConfig({ pluginRoot, workspaceRoot });
     const workflowGraph = buildWorkflowGraph(config, {
       installedSkills: loadInstalledSkills(pluginRoot),

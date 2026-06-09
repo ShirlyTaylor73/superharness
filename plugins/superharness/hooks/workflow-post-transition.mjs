@@ -38,8 +38,10 @@ export async function main() {
     const pluginRoot = resolvePluginRoot();
     const workflowStateDir = path.join(pluginRoot, 'workflow-state-server');
 
+    const { resolveTrustedWorkspaceRoot } = await import(pathToFileURL(path.join(workflowStateDir, 'workspace.js')).href);
+    const workspaceRoot = resolveTrustedWorkspaceRoot(process.env);
+
     // Free-mode check: skip skill injection entirely
-    const workspaceRoot = path.resolve(input.cwd || process.cwd());
     const { isFreeMode } = await import(pathToFileURL(path.join(pluginRoot, 'hooks', 'lib', 'free-mode-check.mjs')).href);
     if (await isFreeMode({ pluginRoot, workspaceRoot })) {
       process.stdout.write(JSON.stringify({}) + '\n');
@@ -56,7 +58,7 @@ export async function main() {
     // 的 state.skill 字段映射。从 graph 拿，不要直接用 stateName 当 skill name。
     let skillName = toState;
     try {
-      const config = loadWorkflowConfig({ pluginRoot });
+      const config = loadWorkflowConfig({ pluginRoot, workspaceRoot });
       const installedSkills = new Set();
       if (fs.existsSync(skillsDir)) {
         for (const e of fs.readdirSync(skillsDir, { withFileTypes: true })) {
